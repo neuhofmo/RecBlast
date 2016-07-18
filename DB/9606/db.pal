@@ -1,0 +1,8 @@
+#
+# Alias file created 06/30/2016 12:45:22
+#
+TITLE /data/DB/nr limited by /data/Moran/RecBlast/ba16869d-fcc8-4a63-bebb-dbb6965754f7/taxon_gi_file_list.txt
+DBLIST "/data/DB/nr" 
+GILIST /groups/igv/moranne/scripts/RecBlastSA/DB/9606/db.p.gil
+NSEQ 307278
+LENGTH 110107746
