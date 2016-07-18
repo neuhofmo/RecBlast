@@ -9,6 +9,63 @@ import re
 import subprocess
 from Bio import Entrez
 import shutil
+import zipfile
+
+
+TEMP_FILES_PATH = os.getcwd()  
+
+
+def prepare_files(items, file_name, user_id, files_path=TEMP_FILES_PATH):
+    """Receives a list of items and a file to write them to, then writes them to file and returns the file path."""
+    full_path = os.path.join(files_path, "_".join([user_id, file_name]))
+    # items = list(set(items))  # make the list unique  # unnecessary
+    with open(full_path, 'w') as f:
+        for item in items:
+            f.write(item + "\n")
+    return full_path
+
+
+def file_to_string(file_name):
+    with open(file_name, 'r') as f:
+        text = f.read()
+    # delete original file
+    os.remove(file_name)
+    return text
+
+
+def remove_commas(file_name):
+    """Replaces commas with newlines in a file."""
+    with open(file_name, 'r') as f:
+        text = f.read()
+        text = replace(text, ',', '\n')
+    with open(file_name, 'w') as f:  # now writing
+        f.write(text)
+    return file_name
+
+
+def zip_results(fasta_output_path, csv_rbh_output_filename, csv_strict_output_filename, csv_ns_output_filename,
+                output_path):
+    """
+    Receives a folder containing fasta sequences and a csv file, adds them all to zip.
+    :param fasta_output_path:
+    :param csv_rbh_output_filename:
+    :param csv_strict_output_filename:
+    :param csv_ns_output_filename:
+    :param output_path:
+    :return:
+    """
+    zip_file = os.path.join(output_path, "output.zip")
+    fastas = [os.path.join(fasta_output_path, x) for x in os.listdir(fasta_output_path)]
+    with zipfile.ZipFile(zip_file, mode='w') as zf:
+        # adding all fasta files
+        for fasta in fastas:
+            zf.write(fasta, os.path.basename(fasta))
+        # zf.write(csv_file_path, os.path.basename(csv_file_path))  # add csv file
+        # add csv files
+        zf.write(csv_rbh_output_filename, os.path.basename(csv_rbh_output_filename))  # add csv file
+        zf.write(csv_strict_output_filename, os.path.basename(csv_strict_output_filename))  # add csv file
+        zf.write(csv_ns_output_filename, os.path.basename(csv_ns_output_filename))  # add csv file
+    return zip_file
 
 
 # debugging function
@@ -34,51 +91,40 @@ def create_folder_if_needed(path):
         os.mkdir(path)
 
 
-def targz_list(archive_name, file_list):
+def file_len(fname):
+    """Return the file length in lines."""
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+
+
+def targz_folder(archive_name, folder):
     """
     Returns True after
     :param archive_name:
-    :param file_list:
+    :param folder:
     :return:
     """
     with tarfile.open(archive_name, "w:gz") as tar:
-        for file_name in file_list:
-            tar.add(file_name, arcname=os.path.basename(file_name))
-            os.remove(file_name)  # removing the sge file
+        tar.add(folder, arcname=os.path.basename(folder))
     return True
 
 
-def cleanup(path, fasta_path, first_blast_folder, second_blast_folder):
+def cleanup(path, storage_folder, run_id):
     """
     Performs tar and gzip on sets of files produced by the program.
     Then deletes the files and folders.
     :param path:  # the run_folder
-    :param fasta_path:  # the folder containing fasta files
-    :param first_blast_folder:  # the folder containing the first blast results
-    :param second_blast_folder:  # the folder containing the second blast results
+    :param storage_folder:  # the main folder, in which the entire run_folder will be stored
+    :param run_id:  # the folder containing the first blast results
     :return:
     """
-    # clean pickles:
-    pickles = [os.path.join(path, x) for x in os.listdir(path) if x[-2:] == '.p']
-    pickle_archive = os.path.join(path, "pickles.tar.gz")
-    if targz_list(pickle_archive, pickles):
-        # pickles cleaned
-        pass
-    # compress all fasta_path
-    fasta_files = [os.path.join(fasta_path, x) for x in os.listdir(fasta_path)]
-    fasta_archive = os.path.join(path, "fasta_archive.tar.gz")
-    if targz_list(fasta_archive, fasta_files):
-        shutil.rmtree(fasta_path)
-    # compress all first_blast
-    first_blast_files = [os.path.join(first_blast_folder, x) for x in os.listdir(first_blast_folder)]
-    first_blast_archive = os.path.join(path, "first_blast_archive.tar.gz")
-    if targz_list(first_blast_archive, first_blast_files):
-        shutil.rmtree(first_blast_folder)
-    # compress all second_blast (recursive)
-    second_blast_archive = os.path.join(path, "second_blast_archive.tar.gz")
-    with tarfile.open(second_blast_archive, "w:gz") as tar:
-        tar.add(second_blast_folder, arcname=os.path.basename(second_blast_folder))
-        shutil.rmtree(second_blast_folder)
+    # compress all files in path:
+    # fasta_path
+    path_archive = os.path.join(storage_folder, "{}.all.tar.gz".format(run_id))
+    if targz_folder(path_archive, path):  # compress run_folder
+        shutil.rmtree(path)  # delete run folder
     return True
 
 
@@ -128,7 +174,7 @@ def exists_not_empty(path):
         return False
 
 
-def subset_db(tax_id, gi_file_path, db_path, big_db, run_anyway, DEBUG, debug, attempt_no=0):  # TODO call it, doc it
+def subset_db(tax_id, gi_file_path, db_path, big_db, run_anyway, DEBUG, debug, attempt_no=0):
     """
     Subsets a big blast database into a smaller one based on tax_id.
     The function connects to entrez and retrieves gi identifiers of sequences with the same tax_id.
@@ -177,7 +223,7 @@ def subset_db(tax_id, gi_file_path, db_path, big_db, run_anyway, DEBUG, debug, a
     create_folder_if_needed(os.path.join(db_path, tax_id))
     target_db = os.path.join(db_path, tax_id, "db")
     aliastool_command = ["blastdb_aliastool", "-gilist", gi_file_path, "-db", big_db, "-dbtype", "prot", "-out",
-                         target_db]
+                         target_db]  # TODO: test that blastdb_aliastool works for the user
     try:
         subprocess.check_call(aliastool_command)
         print("Created DB subset from nr protein for {}".format(tax_id))
@@ -198,4 +244,7 @@ strip = str.strip
 split = str.split
 replace = str.replace
 re_search = re.search
+re_sub = re.sub
 upper = str.upper
+lower = str.lower
+

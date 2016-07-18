@@ -5,15 +5,9 @@ from sys import exit
 from RecBlastUtils import *
 # from RecBlastParams import *
 
-
-# TODO: doc
-# Document:
-# INPUT = PATH TO BLAST FILES AFTER THEY HAVE BEEN FILTERED BY TAXA
-# OUTPUT = FASTA FILS + READY QSUB FILES FOR SECOND BLAST (BACK TO THE HUMAN GENOME)
-
-# input: GI, the line in which the GI appears
-# update_match_results: each gi is assigned a number (count), and this fun retrieves its fasta:
-# { count(represent the specific gi): [fasta_file, original line, taxa] }
+# Description:
+# This is part 2 of the RecBlast stand-alone version.
+# It starts from the first blast results and ends with running the second blast.
 
 
 # PARAMETERS #
@@ -26,15 +20,16 @@ def increment():
     COUNT += 1
 
 
-def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_org, DEBUG, debug, attempt_no=0):  # TODO: doc
+def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_org, DEBUG, debug, attempt_no=0):
     """
-
-    :param awaiting_second_blast: a dictionary
+    The function fetches fasta sequences using Entrez.efetch, parses them and returns a dictionary with the parsed data.
+    :param awaiting_second_blast: a dictionary (empty or from a previous iteration of the function)
     :param accession_list: list of accession numbers
     :param matching_orgs: a dictionary with matching organisms
-    :param rbh_dict_org:
+    :param rbh_dict_org: a dictionary with organisms with results
+    :param DEBUG: a flag
+    :param debug: the debug function
     :param attempt_no:  the current attempt (0 by default).
-
     :return:
     """
     try:  # connecting to ENTREZ nuc DB
@@ -45,7 +40,6 @@ def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_o
     except Exception, e:  # DB connection exception
         print "Error connecting to server, trying again..."
         print "Error: {}".format(e)
-        print "Debug this!"  # todo: connection problem - can we solve it?
         debug("Error connecting to server, trying again...\n")
 
         # sleeping in case it's a temporary database problem
@@ -78,6 +72,7 @@ def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_o
                 rbh = True
             else:
                 rbh = False
+            # save the parsed results to the dictionary
             awaiting_second_blast[COUNT] = (fasta_record, matching_orgs[accession_v], rbh)
             debug("Added {} to awaiting_second_blast dictionary.".format(COUNT))
         except Exception, e:
@@ -87,42 +82,23 @@ def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_o
 
 def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, identity_threshold, coverage_threshold,
          accession_regex, run_folder, blastp_path, target_db, outfmt, max_target_seqs, back_e_value_thresh, cpu,
-         original_taxa_file, DEBUG, debug, input_list=None):
+         org_tax_id, DEBUG, debug, input_list=None):
     """
-
-    :param first_blast_folder:
-    :param second_blast_folder:
-    :param original_id:
-    :param e_value_thresh:
-    :param identity_threshold:
-    :param coverage_threshold:
-    :param accession_regex:
-    :param run_folder:
-    :param blastp_path:
-    :param target_db:
-    :param outfmt:
-    :param max_target_seqs:
-    :param back_e_value_thresh:
-    :param cpu:
-    :param original_taxa_file:
-    :param input_list:
-    :return:
+    Main function of part 2. Starts from first blast and ends with the second blast.
     """
 
     if input_list:
         assert(type(input_list) == list)  # make sure it's a list
         listing = input_list
-    else:
+    else:  # get the input from the blast folder.
         listing = sorted([os.path.join(first_blast_folder, x) for x in os.listdir(first_blast_folder)
                           if x.endswith('.taxa_filtered.txt')])
-    # user email, needed to access entrez servers
-    # Entrez.email = APP_CONTACT_EMAIL
 
     # manually define the id of the gene you are starting with (default is 0)
 
     blast_two_output_files = []  # initializing update_match_results list for second blast
     blast_two_gene_id_paths = []  # folder paths for the second blast
-    second_blast_for_ids_dict = {}  # a dictionary for ??? # TODO: doc
+    second_blast_for_ids_dict = {}  # a dictionary containing all the parsed genes that will be sent to 2nd blast
     rbh_dict = {}  # a dictionary where key=original_id, value={key=organism: value=accession}
 
     # each file represents blast results for one gene.
@@ -130,7 +106,7 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
     # candidate for the second blast
     for blast_result_file in listing:
         # a successful candidate will be added to this list
-        awaiting_second_blast = {}  # dictionary of putative orthologs for this specific gene ID
+        awaiting_second_blast = {}  # dictionary of putative orthologues for this specific gene ID
         # will be blasted by the end of this loop!
         rbh_dict[original_id] = {}  # defining the rbh dictionary for the gene
 
@@ -242,19 +218,17 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
             # command line to run:
             command_line = "{0} -query {1} -db {2} -outfmt '{3}' -max_target_seqs {4} -evalue {5} -max_hsps 1 " \
                            "-qcov_hsp_perc {6} -num_threads {7} -out {8}\n" \
-                           "grep -v ';' {8} | grep -w -f {9} > {10}\nrm {8}\n".format(blastp_path, full_fasta_path,
-                                                                                      target_db, outfmt,
-                                                                                      max_target_seqs,
-                                                                                      back_e_value_thresh,
-                                                                                      coverage_threshold, cpu,
-                                                                                      blast_output_file,
-                                                                                      original_taxa_file,
-                                                                                      filtered_blast_output_file)
+                           "grep -v ';' {8} | grep {9} > {10}\nrm {8}\n".format(blastp_path, full_fasta_path,
+                                                                                target_db, outfmt, max_target_seqs,
+                                                                                back_e_value_thresh, coverage_threshold,
+                                                                                cpu, blast_output_file, org_tax_id,
+                                                                                filtered_blast_output_file)
+
             debug("Running the following line:\n{}".format(command_line))
 
             # writing the command to file and running the file
             script_path = write_blast_run_script(command_line)
-            subprocess.check_call(script_path)  # TODO: test update_match_results
+            subprocess.check_call(script_path)
 
             # adding the filtered update_match_results file name here:
             blast_two_output_files.append(filtered_blast_output_file)
@@ -269,9 +243,4 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
     pickle.dump(rbh_dict, open(os.path.join(run_folder, "rbh_dict.p"), 'wb'))
     return second_blast_for_ids_dict, blast_two_output_files, blast_two_gene_id_paths
 
-
-# if __name__ == "__main__":
-#     if main():
-#         exit(0)
-#     else:
-#         exit(1)
+# Done with part 2

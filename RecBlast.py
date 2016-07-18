@@ -1,7 +1,6 @@
 #! /usr/bin/env python2
 
 import argparse
-# from RecBlastParams import *
 from RecBlastUtils import *
 import csv_transformer
 import taxa_to_taxid
@@ -54,9 +53,6 @@ parser.add_argument("--output_path", help="A folder in which to keep all RecBlas
 parser.add_argument("--gene_csv", help="This flag means the gene file provided is already a CSV file containing the "
                                        "required genes as well as their description and uniprot id.",
                     action="store_true", default=GENE_CSV_PROVIDED)
-parser.add_argument("--tax_ids", help="This flag means the taxa file provided is already a file containing the "
-                                      "required taxa ids and not the taxa names.",
-                    action="store_true", default=TAXA_ID_PROVIDED)
 
 parser.add_argument("--run_name", help="The name the run will receive (will determine the folder names)")
 
@@ -97,6 +93,7 @@ DEBUG = args.debug
 def debug(s):
     return debug_s(s, DEBUG)
 
+# DATA VALIDATION, and local preparation of paths:
 
 # making sure the files we received exist and are not empty:
 if exists_not_empty(args.gene_file):
@@ -123,26 +120,20 @@ except subprocess.CalledProcessError:
 
 CPU = args.num_threads
 
-# parsing the genes_csv if it's a csv, and transforming it if it's a gene list file
-if args.gene_csv:
-    CSV_PATH = args.gene_file  # hope it's a good and valid file...
-else:  # if the csv is not provided, create it from a gene file
-    CSV_PATH = csv_transformer.gene_file_to_csv(args.gene_file)  # quits if no input could be converted
-
 # script folder
 SCRIPT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 # defining run folder
-run_folder = os.getcwd()   # current folder
+base_folder = os.getcwd()   # current folder
 if args.run_name:
     run_name = args.run_name
     if args.output_path:
         run_folder = args.output_path  # assigning run_folder (default)
     else:
-        run_folder = os.path.join(run_folder, run_name)
+        run_folder = os.path.join(base_folder, run_name)
 else:
     run_name = str(uuid4())  # randomly assigned run_name
-    run_folder = os.path.join(run_folder, run_name)
+    run_folder = os.path.join(base_folder, run_name)
 
 create_folder_if_needed(run_folder)  # creating the folder
 
@@ -170,37 +161,42 @@ tax_id_dict = dict((v, k) for k, v in tax_name_dict.iteritems())  # the reverse 
 # processing original species
 if is_number(args.origin_species):  # already a tax_id
     ORG_TAX_ID = args.origin_species
-    # write it to a file
-    ORIGINAL_TAXA_FILE = os.path.join(run_folder, "original_tax_id.txt")
-    with open(ORIGINAL_TAXA_FILE, 'w') as tax_file:
-        tax_file.write(args.origin_species+"\n")
-    ORIGIN_SPECIES = tax_id_dict[args.origin_species]
-    debug("Tax id given: {0}, which is {1}, no need to convert. Saved original tax_id to {2}".format(
-        args.origin_species, ORIGIN_SPECIES, ORIGINAL_TAXA_FILE))
-
+    try:
+        ORIGIN_SPECIES = tax_id_dict[args.origin_species]
+        debug("Tax id given: {0}, which is {1}, no need to convert.".format(ORG_TAX_ID, ORIGIN_SPECIES))
+    except KeyError:
+        print("Unknown tax id for the reference species: {}!".format(ORG_TAX_ID))
+        ORIGIN_SPECIES = ""
+        exit(1)
 else:  # it's a tax name
     ORIGIN_SPECIES = args.origin_species
-    # convert it to tax id and write it to a file
-    ORG_TAX_ID = tax_name_dict[ORIGIN_SPECIES]
-    ORIGINAL_TAXA_FILE = os.path.join(run_folder, "original_tax_id.txt")
-    with open(ORIGINAL_TAXA_FILE, 'w') as tax_file:
-        tax_file.write(ORG_TAX_ID + "\n")
-    debug("Tax name given: {0}, which is tax_id {1}, converted. Saved original tax_id to {2}".format(
-        ORIGIN_SPECIES, ORG_TAX_ID, ORIGINAL_TAXA_FILE))
+    # convert it to tax id
+    try:
+        ORG_TAX_ID = tax_name_dict[ORIGIN_SPECIES]
+        debug("Tax name given: {0}, which is tax_id {1}, converted.".format(ORIGIN_SPECIES, ORG_TAX_ID))
+    except KeyError:
+        print("Unknown tax name for the reference species: {}!".format(ORIGIN_SPECIES))
+        ORG_TAX_ID = ""
+        exit(1)
 
-# working on the taxa list files
-if args.tax_ids:  # already a tax_id file
-    TAXA_LIST_FILE = args.taxa_list_file  # actually better to do them both
-    # (TAXA_LIST_FILE, bad_tax_list) = taxa_to_taxid.convert_tax_to_taxid(tax_name_dict, args.taxa_list_file)
-    debug("Taking fasta filters from pre made taxa list files. saved new list in: {}".format(TAXA_LIST_FILE))
-else:  # only a taxa names file
-    # converting taxa names list
-    (TAXA_LIST_FILE, bad_tax_list) = taxa_to_taxid.convert_tax_to_taxid(tax_name_dict, args.taxa_list_file)
-    if len(bad_tax_list) > 0:
-        print("Bad taxa names found in the file provided:")
-        print("\n".join(bad_tax_list))
-        print("Ignoring them.")
-    debug("Converted tax list to tax ID files, saved new list in: {}".format(TAXA_LIST_FILE))
+# parsing the genes_csv if it's a csv, and transforming it if it's a gene list file
+if args.gene_csv:
+    CSV_PATH = args.gene_file  # hope it's a good and valid file...
+    print("Provided CSV with {} genes". format(file_len(CSV_PATH) - 1))
+else:  # if the csv is not provided, create it from a gene file
+    CSV_PATH = csv_transformer.gene_file_to_csv(remove_commas(args.gene_file), ORG_TAX_ID)
+    # quits if no input could be converted
+    print("Generated CSV with {} genes". format(file_len(CSV_PATH) - 1))
+
+# validating the taxa list files
+# converting taxa names list
+(TAXA_LIST_FILE, bad_tax_list, good_tax_list) = taxa_to_taxid.convert_tax_to_taxid(tax_name_dict, tax_id_dict,
+                                                                                   args.taxa_list_file)
+if len(bad_tax_list) > 0:
+    print("Bad taxa names found in the file provided:")
+    print("\n".join(bad_tax_list))
+    print("Ignoring them.")
+debug("Converted tax list to tax ID files, saved new list in: {}".format(TAXA_LIST_FILE))
 
 # processing DB information:
 #############################
@@ -212,14 +208,14 @@ if args.db_first_run:  # if the user provided a DB
 else:  # find the nr DB yourself
     BLASTDB_PATH = ""
     try:
-        BLASTDB_PATH = subprocess.check_output(["echo", "$BLASTDB"], universal_newlines=True).strip()
+        BLASTDB_PATH = strip(subprocess.check_output(["echo", "$BLASTDB"], universal_newlines=True))
         if BLASTDB_PATH == "":  # depends on the system
-            blastdb_exit()
+            blastdb_exit()  # quits and sends a message
     except subprocess.CalledProcessError:
         blastdb_exit()
-    debug("Found $BLASTDB path in {}".format(BLASTDB_PATH))
+    print("Found $BLASTDB path in {}".format(BLASTDB_PATH))
 
-    # check if nr exists
+    # check if nr exists on the local system
     if exists_not_empty(os.path.join(BLASTDB_PATH, "nr.00.phd")):
         DB = os.path.join(BLASTDB_PATH, "nr")
     else:
@@ -260,7 +256,7 @@ print("starting to perform part_one.py")
 id_dic, blast1_output_files = part_one.main(CSV_PATH, APP_CONTACT_EMAIL, run_folder, FASTA_PATH, FIRST_BLAST_FOLDER,
                                             FASTA_OUTPUT_FOLDER, BLASTP_PATH, DB, TAXA_LIST_FILE, OUTFMT,
                                             MAX_TARGET_SEQS, E_VALUE_THRESH, COVERAGE_THRESHOLD, CPU, DEBUG, debug)
-print("BLASTP part 1 done!")  # should find a way to make sure the data is okay...
+print("BLASTP part 1 done!")
 print("*******************")
 
 # part 2:
@@ -272,7 +268,7 @@ second_blast_for_ids_dict, blast2_output_files, blast2_gene_id_paths = part_two.
                                                                                      BLASTP_PATH, TARGET_DB, OUTFMT,
                                                                                      MAX_TARGET_SEQS,
                                                                                      BACK_E_VALUE_THRESH, CPU,
-                                                                                     ORIGINAL_TAXA_FILE, DEBUG, debug,
+                                                                                     ORG_TAX_ID, DEBUG, debug,
                                                                                      input_list=blast1_output_files)
 print("BLASTP part 2 done!")
 print("*******************")
@@ -280,19 +276,16 @@ print("*******************")
 # part 3:
 if part_three.main(SECOND_BLAST_FOLDER, BACK_E_VALUE_THRESH, IDENTITY_THRESHOLD, COVERAGE_THRESHOLD, TEXTUAL_MATCH,
                    TEXTUAL_SEQ_MATCH, ORIGIN_SPECIES, ACCESSION_REGEX, run_folder, MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST,
-                   CSV_OUTPUT_FILENAME, FASTA_OUTPUT_FOLDER, DEBUG, debug, id_dic, second_blast_for_ids_dict,
-                   blast2_gene_id_paths):
+                   CSV_OUTPUT_FILENAME, FASTA_OUTPUT_FOLDER, DEBUG, debug, good_tax_list, id_dic,
+                   second_blast_for_ids_dict, blast2_gene_id_paths):
     print("part 3 done!")
     print("*******************")
 
 # cleaning:
 if not DEBUG and not args.keep_files:
-    if cleanup(run_folder, FASTA_PATH, FIRST_BLAST_FOLDER, SECOND_BLAST_FOLDER):
+    if cleanup(run_folder, base_folder, run_name):
         print("Files archived, compressed and cleaned.")
 
 print("Program done.")
 
 
-# TODO: test: csv conversion and tax_list conversion
-# TODO create online parsing program
-# TODO: create an online version

@@ -1,6 +1,5 @@
 #! /usr/bin/env python2
 
-# from Bio import Entrez
 from sys import exit
 import pickle
 from difflib import SequenceMatcher
@@ -25,72 +24,107 @@ def similar(a, b):
 
 # structure of update_match_results:
 # {gene_name: { animal1: [ [strict, not strict] ],  animal2: [],  animal3 = [], ...}}
-def update_match_results(enumerator, animal_org, target_name1, this_gene_dic, is_rbh, DEBUG, debug):  # TODO: doc
+def update_match_results(enumerator, animal_org, target_name1, this_gene_dic, is_rbh, DEBUG, debug):
     """
-    Prints final update_match_results for each gene
-    :param is_rbh:
+    Prints final output for each gene. Saves the output to this_gene_dic, but also returns a status which will be used
+    later to determine if the match is RBH/strict/non-strict.
+    :param is_rbh: True if the value is RBH, False if not.
     :param this_gene_dic:
     :param enumerator: result number for gene_id
-    :param animal_org:
-    :param target_name1:
+    :param animal_org:  Name of the organism
+    :param target_name1:  Target gene name
+    :param DEBUG:  The debug flag (True/False)
+    :param debug:  The debug function
     :return:
     """
+
+    status = "non-strict"  # default value
     try:  # update current animal
         this_gene_dic[animal_org][1] += 1  # non strict increments anyway
         if enumerator == 1:  # strict increment
             this_gene_dic[animal_org][0] += 1
+            status = "strict"
 
     except KeyError:  # if we don't have animal_org in our db
         if enumerator == 1:  # if it is the first match
             if is_rbh:
                 this_gene_dic[animal_org] = [1, 1, 1]
+                status = "RBH"
             else:
                 this_gene_dic[animal_org] = [1, 1, 0]
+                status = "strict"
         elif enumerator > 1:  # found match, not first
             this_gene_dic[animal_org] = [0, 1, 0]
 
     debug("current status for gene %s, animal %s: %s" % (target_name1, animal_org, this_gene_dic[animal_org]))
-    return True
+    return status
 
 
-def write_all_output_csv(out_dict, org_list, csv_out_filename, DEBUG, debug):
+def write_all_output_csv(out_dict, org_list, csv_rbh_output_filename, csv_strict_output_filename,
+                         csv_ns_output_filename, DEBUG, debug, good_tax_list):
     """
     Writes formatted final output to CSV.
     :param out_dict: a dictionary of dictionaries
     :param org_list: a list of organisms
-    :param csv_out_filename:
+    :param csv_rbh_output_filename: the output file path of the RBH csv
+    :param csv_strict_output_filename: the output file path of the strict csv
+    :param csv_ns_output_filename: the output file path of the non-strict csv
+    :param good_tax_list: a list of the currently good taxa (for validation)
+    :param DEBUG: the DEBUG flag (True for debug mode)
+    :param debug: the debug function
     :return:
     """
+
     # get all organisms
-    all_org_list = list(set(org_list))
-    # TODO: decide how to sort them (alphabetically?)
-    with open(csv_out_filename, 'w') as csv_file:
-        csv_file.write(",".join(["gene_name"] + all_org_list))  # write header
-        csv_file.write("\n")
-        for gene_name in out_dict:  # write every line
-            assert(type(gene_name) == str)
-            out_line = [gene_name]  # initialize output line: each line starts with the gene name
-            for org in all_org_list:
-                try:
-                    debug(out_dict[gene_name][org])
-                    out_line.append(out_dict[gene_name][org])
-                # if the value doesn't exist for the animal - leave it empty
-                except KeyError:
-                    out_line.append("")
-                    # out_line.append("[0-0-0]")  # if we want the output that way...
-            # formatting and printing the line
-            out_line = [str(x).replace(', ', '-') for x in out_line]
-            csv_file.write(",".join(out_line))
-            csv_file.write("\n")
-            debug("Printed gene_name {0} to output file".format(gene_name))
+    all_org_list = sorted(list(set(org_list + good_tax_list)))
+    # open 3 files:
+    with open(csv_rbh_output_filename, 'w') as csv_rbh_file:
+        csv_rbh_file.write(",".join(["gene_name"] + all_org_list))  # write header
+        csv_rbh_file.write("\n")
+        with open(csv_strict_output_filename, 'w') as csv_strict_file:
+            csv_strict_file.write(",".join(["gene_name"] + all_org_list))  # write header
+            csv_strict_file.write("\n")
+            with open(csv_ns_output_filename, 'w') as csv_nonstrict_file:
+                csv_nonstrict_file.write(",".join(["gene_name"] + all_org_list))  # write header
+                csv_nonstrict_file.write("\n")
+
+                for gene_name in out_dict:  # write every line
+                    assert type(gene_name) == str, "Gene name is not a string!"
+                    # initialize output line: each line starts with the gene name
+                    out_line_rbh = [gene_name]
+                    out_line_strict = [gene_name]
+                    out_line_non_strict = [gene_name]
+                    for org in all_org_list:
+                        try:  # add results to all 3 output csv files
+                            debug(out_dict[gene_name][org])
+                            # out_line.append(out_dict[gene_name][org])
+                            results = out_dict[gene_name][org]  # list
+                            out_line_rbh.append(str(results[2]))
+                            out_line_strict.append(str(results[0]))
+                            out_line_non_strict.append(str(results[1]))
+                        # if the value doesn't exist for the animal - leave it empty
+                        except KeyError:
+                            # out_line.append("")
+                            out_line_rbh.append("0")
+                            out_line_strict.append("0")
+                            out_line_non_strict.append("0")
+
+                    # writing to each line:
+                    csv_rbh_file.write("{}\n".format(",".join(out_line_rbh)))
+                    csv_strict_file.write("{}\n".format(",".join(out_line_strict)))
+                    csv_nonstrict_file.write("{}\n".format(",".join(out_line_non_strict)))
+                    debug("Printed gene_name {0} to output files.".format(gene_name))
+
     return True
 
 
 def get_definition(accession_list, DEBUG, debug, attempt_no=0):
     """
-    Receives a list of gis and returns a list of Entrez records
-    :param accession_list:
-    :param attempt_no:
+    Receives a list of gis and returns a list of Entrez records.
+    :param accession_list: a list of accession numbers (or GIs)
+    :param attempt_no: How many times did we try already? (default: 0)
+    :param DEBUG: the DEBUG flag
+    :param debug: the debug function
     :return:
     """
     try:  # fetching from entrez
@@ -100,10 +134,10 @@ def get_definition(accession_list, DEBUG, debug, attempt_no=0):
         # get the definition and sequence of each gene
         results = [(res["GBSeq_definition"], res["GBSeq_sequence"]) for res in records]
         return results
+
     except Exception, e:
         print "Error connecting to server, trying again..."
         print "Error: {}".format(e)
-        print "Debug this!"  # todo: connection problem - can we solve it?
         debug("Error connecting to server, trying again...\n")
 
         # sleeping in case it's a temporary database problem
@@ -121,31 +155,36 @@ def get_definition(accession_list, DEBUG, debug, attempt_no=0):
         return get_definition(accession_list, DEBUG, debug, attempt_no)  # working on all files together, from all genes
 
 
-# TODO: doc
 def prepare_candidates(file_lines_dict, index_set, enumerator, e_val_thresh, id_thresh, cov_thresh, accession_regex,
                        DEBUG, debug):
     """
-
-    :param file_lines_dict:
+    Parsing the blast lines (in several files together).
+    Preparing the candidate genes for retrieval. Returns accession list.
+    :param file_lines_dict: A dictionary with all file lines
     :param index_set: all remaining indexes for which reciprocal blast hasn't been completed. (list of nums)
     :param enumerator: current line number in each file
-    :param e_val_thresh:
-    :param id_thresh:
-    :param cov_thresh:
-    :param accession_regex:
+    :param e_val_thresh: e-value threshold
+    :param id_thresh: identity threshold
+    :param cov_thresh: coverage threshold
+    :param accession_regex: the regex uses to parse the accession
+    :param DEBUG: DEBUG flag
+    :param debug: debug function
     :return:
     """
     debug("line number %s in files:" % enumerator)
     debug("remaining indexes: %s" % index_set)
-
+    remove_me = []
     accessions = []
+    index_list = list(index_set)
 
     for index in index_set:
         # going straight to our desired line according to "enumerator":
         try:
             line_list = split(file_lines_dict[index][enumerator - 1], "\t")
         except IndexError:
-            debug("File {0} is probably line number {1}. Moving on to next file!".format(index, enumerator))
+            debug("Line {0} does not exist in file {1} does not exist. Moving on to next file!".format(enumerator,
+                                                                                                       index))
+            remove_me.append(index)  # add the index to remove list
             continue
         identity = float(line_list[2])
         coverage = float(line_list[3])
@@ -161,32 +200,21 @@ def prepare_candidates(file_lines_dict, index_set, enumerator, e_val_thresh, id_
                 result = re_search(accession_regex, line_list[1])
                 accession_v = result.group(1)
             accessions.append(accession_v)
-    return accessions  # a list of accessions/gis
+
+    index_set = set([x for x in index_list if x not in remove_me])
+
+    return accessions, index_set  # a list of accessions/gis
 
 
 def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_threshold, textual_match,
-         textual_sequence_match, species, accession_regex, run_folder, max_attempts_to_complete_rec_blast,
-         csv_output_filename, fasta_output_folder, DEBUG, debug, id_dic=None, second_blast_for_ids_dict=None,
-         gene_paths_list=None):
+         textual_sequence_match, species, accession_regex, description_regex, run_folder,
+         max_attempts_to_complete_rec_blast, csv_rbh_output_filename, csv_strict_output_filename,
+         csv_ns_output_filename, fasta_output_folder, DEBUG, debug, good_tax_list,
+         id_dic=None, second_blast_for_ids_dict=None, gene_paths_list=None):
+    """
+    The third part of RecBlast. Parses the blast output, compares, organizes and creates output files.
     """
 
-    :param second_blast_folder:
-    :param e_value_thresh:
-    :param identity_threshold:
-    :param coverage_threshold:
-    :param textual_match:
-    :param textual_sequence_match:
-    :param species:
-    :param accession_regex:
-    :param run_folder:
-    :param max_attempts_to_complete_rec_blast:
-    :param csv_output_filename:
-    :param fasta_output_folder:
-    :param id_dic:
-    :param second_blast_for_ids_dict:
-    :param gene_paths_list:
-    :return:
-    """
     # deal with args in debug mode:
     if DEBUG:
         if not second_blast_for_ids_dict:
@@ -220,6 +248,8 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         target_sequence = strip(target[4])
         del target  # don't need it anymore
 
+        debug_file = open(os.path.join(run_folder, "missedhits_for_gene_%s(%s).txt") % (gene_id, target_name1), "w")
+
         # a list containing all the files we are going to work on, for this gene id:
         all_files_in_gene_id = [file_name for file_name in os.listdir(gene_path_folder) if
                                 (os.path.isfile(os.path.join(gene_path_folder, file_name)) and
@@ -251,8 +281,9 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                 break
 
             # quality check for each line in the files, only those who pass will move on to the next stage
-            accessions = prepare_candidates(index_files_dict, index_set, enumerator, e_value_thresh, identity_threshold,
-                                            coverage_threshold, accession_regex, DEBUG, debug)
+            accessions, index_set = prepare_candidates(index_files_dict, index_set, enumerator, e_value_thresh,
+                                                       identity_threshold, coverage_threshold, accession_regex, DEBUG,
+                                                       debug)
             debug("accessions: {}".format(accessions))
 
             # getting taxa info only for the genes that passed the initial quality text
@@ -270,15 +301,19 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                     index_count += 1  # increment for next round
 
                     # cleaning strings before string comparison
-                    candidate_name = replace(candidate[0], "PREDICTED: ", "")
-                    candidate_name = replace(candidate_name, "[{}]".format(species.capitalize()), "")
-                    candidate_name = replace(candidate_name, "unnamed protein product", "")
+                    candidate_name = format_description(candidate[0], description_regex, species)
                     candidate_seq = candidate[1]
 
-                    animal_org = second_blast_for_ids_dict[gene_id][int(loc)][1]  # getting from dict of dict
-                    fasta_record = second_blast_for_ids_dict[gene_id][int(loc)][0]  # getting from dict of dict
-                    is_rbh = second_blast_for_ids_dict[gene_id][int(loc)][2]  # boolean representing RBH
+                    try:
+                        animal_org = second_blast_for_ids_dict[gene_id][int(loc)][1]  # getting from dict of dict
+                        fasta_record = second_blast_for_ids_dict[gene_id][int(loc)][0]  # getting from dict of dict
+                        is_rbh = second_blast_for_ids_dict[gene_id][int(loc)][2]  # boolean representing RBH
+                    except KeyError:  # no value for that id, probably empty
+                        debug("No value for index {}".format(loc))
+                        continue
                     # if all goes well, we found the animal
+
+                    target_name2 = format_description(target_name2, description_regex, animal_org)
 
                     # textual matches between the candidate name, description or the sequence itself
                     if similar(upper(candidate_name), upper(target_name1)) > textual_match \
@@ -286,18 +321,32 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                             or similar(upper(target_sequence), upper(candidate_seq)) > textual_sequence_match:
 
                         indexes_to_remove.add(loc)  # in each round, we remove indexes_per_id to which we found a match
-                        if update_match_results(enumerator, animal_org, target_name1, this_gene_dic, is_rbh, DEBUG,
-                                                debug):
-                            debug("Calculated matches for gene_id {0} enumerator {1}".format(gene_id, enumerator))
+                        match_status = update_match_results(enumerator, animal_org, target_name1, this_gene_dic, is_rbh,
+                                                            DEBUG, debug)
+                        debug("Calculated matches for gene_id {0} enumerator {1}".format(gene_id, enumerator))
                         # add the fasta sequence to this fasta output (declared in part 1)
                         fasta_output_file_name = os.path.join(fasta_output_folder,
-                                                              "fasta-{0}-{1}.fasta".format(gene_id, target_name1))
-                        with open(fasta_output_file_name, 'a') as fasta_output_file:
+                                                              "fasta-{0}-{1}".format(gene_id, target_name1))  # basename
+                        fasta_output_filename_rbh = fasta_output_file_name + '_RBH.fasta'
+                        fasta_output_filename_ns = fasta_output_file_name + '_non-strict.fasta'
+                        fasta_output_filename_strict = fasta_output_file_name + '_strict.fasta'
+
+                        # start updating non-strict anyway:
+                        with open(fasta_output_filename_ns, 'a') as fasta_output_file:
                             fasta_output_file.write("{}\n\n".format(fasta_record))
-                        debug("Added fasta seq to fasta file {}".format(fasta_output_file_name))
+                        debug("Added fasta seq to non-strict fasta file {}".format(fasta_output_filename_ns))
+                        # if strict or RBH
+                        if match_status in ['strict', 'RBH']:
+                            with open(fasta_output_filename_strict, 'a') as fasta_output_file:
+                                fasta_output_file.write("{}\n\n".format(fasta_record))
+                            if match_status == 'RBH':
+                                with open(fasta_output_filename_rbh, 'a') as fasta_output_file:
+                                    fasta_output_file.write("{}\n\n".format(fasta_record))
 
                     else:  # couldn't find similarity
                         debug("not similar: %s == %s, %s" % (candidate, target_name2, animal_org))
+                        debug_file.write("%s not similar: %s == %s, %s\n" % (candidate_name, target_name1, target_name2,
+                                                                             animal_org))
 
                 # preparing new index_set, while in loop
                 # removing indexes_per_id for which a match has been found
@@ -316,16 +365,13 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         all_organisms += [x for x in this_gene_dic.keys()]  # a list of the organisms with results
 
     # writing final csv output:
-    if write_all_output_csv(all_genes_dict, all_organisms, csv_output_filename, DEBUG, debug):
-        print "Wrote csv output to file: {}".format(csv_output_filename)
+    if write_all_output_csv(all_genes_dict, all_organisms, csv_rbh_output_filename, csv_strict_output_filename,
+                            csv_ns_output_filename, DEBUG, debug, good_tax_list):
+        print "Wrote csv output to files: {},{},{}".format(csv_rbh_output_filename, csv_strict_output_filename,
+                                                           csv_ns_output_filename)
     print("Printed all the output fasta sequences to folder {}".format(fasta_output_folder))
 
     print "done!"
     return True
 
-
-# if __name__ == "__main__":
-#     if main():
-#         exit(0)
-#     else:
-#         exit(1)
+# Done with part 3

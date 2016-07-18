@@ -1,0 +1,1 @@
+# Install RecBlast stand-alone on your local machine

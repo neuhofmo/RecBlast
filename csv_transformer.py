@@ -21,47 +21,68 @@ def gene_list_from_file(in_file):
 def gene_list_to_csv(gene_list, taxid, out_file):
     """
     Receives a list of gene names/accession numbers and an update_match_results file path.
-    :param gene_list:
-    :param taxid:
-    :param out_file:
+    :param gene_list: A list of gene names, uniprot IDs or accession numbers.
+    :param taxid: The reference taxon ID
+    :param out_file: Output file path.
     :return:
     """
-
     # update_match_results file
     with open(out_file, "w") as output:
         # generating the csv we need for the analysis
-        mg = mygene.MyGeneInfo()
+        output.write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
+        mg = mygene.MyGeneInfo()  # mygene module
         genes_data = mg.querymany(gene_list, scopes='symbol,namereporter,accession', fields='uniprot,name,symbol',
-                                  species=taxid)  # TODO: check this on other species
+                                  species=taxid)
+
         for geneDic in genes_data:  # iterating over dicts
-            try:
+            try:  # parsing
                 original_gene_id = geneDic['symbol']
                 full_gene_name = geneDic['name']
                 uniprot_id = geneDic['uniprot']['Swiss-Prot']
                 output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
-            except KeyError:
-                print "didn't find value for %s" % geneDic['query']  # didn't happen so far but still
-    if os.stat(out_file).st_size > 0:
+            except KeyError:  # retrieving didn't succeed
+                print("didn't find value for %s" % geneDic['query'])  # didn't happen so far but still
+                print("Trying to get the value manually from uniprot in a patchy way:")
+                try:  # if it's a uniprot ID, this part should work.
+                    url2 = "http://www.uniprot.org/uniprot/"  # uniprot to fasta
+                    url_uniprot = url2 + geneDic['query'] + ".tab"  # the UNIPROT url
+                    request = urllib2.Request(url_uniprot)
+                    response = urllib2.urlopen(request)  # get request
+                    page = response.read(20000)  # read (up to 200000 lines)
+                    this_gene_data = split(split(page, '\n')[1], '\t')
+                    original_gene_id = this_gene_data[1]
+                    full_gene_name = this_gene_data[3]
+                    uniprot_id = this_gene_data[0]
+                    output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
+                except IndexError:
+                    print("didn't find value for %s in uniprot too." % geneDic['query'])
+
+    if os.stat(out_file).st_size > 30:  # minimum file size because of the header
+        # this means that the CSV creation worked.
         return True
     else:
         print("Could not convert gene names to csv file. Couldn't locate the genes. Exiting.")
         exit(1)
+        return False  # we actually don't need to return False because of the exit. but still.
 
 
 def gene_file_to_csv(infile, tax_id, outfile=None):
     """
-    Receive a file with a list of genes, as well as an optional update_match_results file name.
+    Receive a file with a list of genes, as well as an optional output file name.
     Returns the filename of the update_match_results csv file.
-    :param infile:
-    :param tax_id:
-    :param outfile:
+    :param infile: A file containing a list of genes.
+    :param tax_id: Tax ID of the reference genome
+    :param outfile: Output file path
     :return:
     """
+    # if the outfile is not provided we will generate our own
     if not outfile:
         outfile = "{}.genes.csv".format(infile)
     input_accession_list = gene_list_from_file(infile)
     if gene_list_to_csv(input_accession_list, tax_id, outfile):
         return outfile
+    else:
+        return ""  # return an empty file name
 
 if __name__ == "__main__":
     from sys import argv
@@ -69,7 +90,6 @@ if __name__ == "__main__":
     try:
         input_file = argv[1]
         tax_id = argv[2]
-        # we used 'control_genes_accesion.txt'  as input
     except IndexError:
         print "Please provide a file containing a list of gene names or accession numbers, and a tax_id (number)."
         exit(1)
@@ -77,8 +97,7 @@ if __name__ == "__main__":
         output_file = argv[2]
     except IndexError:
         output_file = None
-        # output_file = "checkList.csv"  # FOR TEST
     output_file = gene_file_to_csv(input_file, tax_id, output_file)
     print "Wrote CSV to {}".format(output_file)
 
-# 6087
+
