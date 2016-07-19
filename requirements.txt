@@ -4,4 +4,5 @@
 uuid
 biopython
 argparse
+requests
 mygene

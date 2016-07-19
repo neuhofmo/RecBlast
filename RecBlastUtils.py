@@ -12,7 +12,7 @@ import shutil
 import zipfile
 
 
-TEMP_FILES_PATH = os.getcwd()  
+TEMP_FILES_PATH = os.getcwd()
 
 
 def prepare_files(items, file_name, user_id, files_path=TEMP_FILES_PATH):
