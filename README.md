@@ -77,10 +77,17 @@ origin_species:         The species of origin (for which we start the blast)
 gene_file:              A file containing a list of gene names to perform the reciprocal blast on.
 taxa_list_file:         A file containing a list of taxa names to perform the reciprocal blast on. They must not include the original taxon!
 
-These should be enough to run 
+These should be enough to run RecBlast correctly. 
+There is no real need for any other parameter to change, unless, for example, you have different threshold, you wish to use higher CPU or you already have your databases prepared in advance.
+
 In addition, a list of optional arguments is described when using the help flag:
 `python ./RecBlast.py --help`
 Additional explanation of the effect of each argument can be found [here](http://reciprocalblast.com/documentation)
 
+If you have any other questions, or any bugs to report, please contact us at recblast@gmail.com.
 
+Good luck,
+
+Efrat and Moran,
+The RecBlast Team
 

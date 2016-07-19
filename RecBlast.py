@@ -58,21 +58,21 @@ parser.add_argument("--run_name", help="The name the run will receive (will dete
 
 parser.add_argument("--max_attempt_to_complete_recblast",
                     help="The maximum number of matches to perform the reciprocal blast on.",
-                    default=100)
+                    default=MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST)
 # blast parameters
 parser.add_argument("--num_threads", help="The number of threads (CPU) dedicated for parallel blast run.",
                     default=1, type=int)
-parser.add_argument("--evalue", help="The e-value threshold for matches of the first blast.", default=1e-7)
+parser.add_argument("--evalue", help="The e-value threshold for matches of the first blast.", default=E_VALUE_THRESH)
 parser.add_argument("--evalue_back", help="The e-value threshold for matches of the second blast.",
-                    default=1e-7)
+                    default=BACK_E_VALUE_THRESH)
 parser.add_argument("--identity", help="The minimum identity required for blast matches.",
-                    default=37)
+                    default=IDENTITY_THRESHOLD)
 parser.add_argument("--coverage", help="The minimum query and hit coverage required for blast matches.",
-                    default=50)
-parser.add_argument("--max_seqs", help="The maximum number of sequences reported by blast.", default='1000000')
+                    default=COVERAGE_THRESHOLD)
+parser.add_argument("--max_seqs", help="The maximum number of sequences reported by blast.", default=MAX_TARGET_SEQS)
 parser.add_argument("--db_first_run", help="The path to the BLASTP database for the first run (should be NR).")
 parser.add_argument("--target_db", help="The path to the BLASTP database for the second run "
-                                        "(protein database of the species of origin")
+                                        "(protein database of the species of origin)")
 
 parser.add_argument("--string_similarity", help="The string similarity value for comparing the gene names/descriptions",
                     default=TEXTUAL_MATCH)
