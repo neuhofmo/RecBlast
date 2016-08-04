@@ -26,8 +26,8 @@ In order to download the program, just clone the source from github using:
 Since RecBlast is written in python, there's not much installation to do. Just cd into the RecBlast folder and run RecBlast.py.
 
 ### Requirements
-    RecBlast can run on any linux machine.  
-    However, there are a few mandatory requirements for RecBlast to run properly:
+   RecBlast can run on any linux machine.  
+   However, there are a few mandatory requirements for RecBlast to run properly:  
 #####1. BLASTP
 RecBlast runs blastp from the BLAST+ suite, which means you need to have BLAST+ installed on your machine, and it should be from version 2.3.0 and above.   
 If you don't have BLAST+ installed, you can get it from the NCBI FTP [here](ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/).

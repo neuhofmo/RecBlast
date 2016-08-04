@@ -1,7 +1,7 @@
 # Install RecBlast stand-alone on your local machine
 
 ### Download
-In order to download the program, just clone the source from github using:
+In order to download the program, just clone the source from github using:  
 `git clone https://github.com/neuhofmo/RecBlast.git`
 
 ### Install
