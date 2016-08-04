@@ -43,7 +43,7 @@ def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None)
                     else:
                         output.write("{}\n".format(tax_id))
                         good_tax_list.append(line)  # append name
-                except NameError:
+                except KeyError:
                     if is_number(line):  # guess it's already a tax id
                         try:
                             tax_name = tax_id_dict[line]

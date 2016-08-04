@@ -209,10 +209,13 @@ if args.db_first_run:  # if the user provided a DB
 else:  # find the nr DB yourself
     BLASTDB_PATH = ""
     try:
-        BLASTDB_PATH = strip(subprocess.check_output(["echo", "$BLASTDB"], universal_newlines=True))
+        BLASTDB_PATH = os.environ["BLASTDB"]
+        # BLASTDB_PATH = strip(subprocess.check_output(["echo", "$BLASTDB"], universal_newlines=True))
+        #  doesn't work all the time
         if BLASTDB_PATH == "":  # depends on the system
             blastdb_exit()  # quits and sends a message
-    except subprocess.CalledProcessError:
+    # except subprocess.CalledProcessError:
+    except KeyError:
         blastdb_exit()
     print("Found $BLASTDB path in {}".format(BLASTDB_PATH))
 
