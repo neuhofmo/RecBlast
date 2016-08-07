@@ -22,6 +22,24 @@ def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
 
+def format_description(description, regex, species):
+    """
+
+    :param description:
+    :param regex:
+    :param species:
+    :return:
+    """
+    species = lower(str(species))
+    description = replace(lower(str(description)), "predicted: ", "")
+    description = replace(description, "[{}]".format(species), "")
+    description = replace(description, "{}".format(species), "")
+    description = replace(description, "unnamed protein product", "")
+    description = replace(description, "isoform", "")
+    description = strip(re_sub(regex, '', description))
+    return description
+
+
 # structure of update_match_results:
 # {gene_name: { animal1: [ [strict, not strict] ],  animal2: [],  animal3 = [], ...}}
 def update_match_results(enumerator, animal_org, target_name1, this_gene_dic, is_rbh, DEBUG, debug):
@@ -209,8 +227,8 @@ def prepare_candidates(file_lines_dict, index_set, enumerator, e_val_thresh, id_
 def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_threshold, textual_match,
          textual_sequence_match, species, accession_regex, description_regex, run_folder,
          max_attempts_to_complete_rec_blast, csv_rbh_output_filename, csv_strict_output_filename,
-         csv_ns_output_filename, fasta_output_folder, DEBUG, debug, good_tax_list,
-         id_dic=None, second_blast_for_ids_dict=None, gene_paths_list=None):
+         csv_ns_output_filename, fasta_output_folder, DEBUG, debug, good_tax_list, id_dic=None,
+         second_blast_for_ids_dict=None, gene_paths_list=None):
     """
     The third part of RecBlast. Parses the blast output, compares, organizes and creates output files.
     """

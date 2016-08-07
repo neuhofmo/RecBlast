@@ -31,6 +31,7 @@ MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST = 100
 # fixed:
 OUTFMT = '6 staxids sseqid pident qcovs evalue sscinames sblastnames'
 ACCESSION_REGEX = re.compile(r'([A-Z0-9\._]+) ?')
+DESCRIPTION_REGEX = re.compile(r'\([^)]*\)')
 ORIGINAL_ID = 1  # start part_two from 0. change this when you want to start from mid-file
 APP_CONTACT_EMAIL = "recblast@gmail.com"
 Entrez.email = APP_CONTACT_EMAIL
@@ -148,7 +149,10 @@ FASTA_PATH = os.path.join(run_folder, "fasta_path")
 create_folder_if_needed(FASTA_PATH)
 FASTA_OUTPUT_FOLDER = os.path.join(run_folder, "fasta_output")
 create_folder_if_needed(FASTA_OUTPUT_FOLDER)
-CSV_OUTPUT_FILENAME = os.path.join(run_folder, "output_table.csv")
+# CSV_OUTPUT_FILENAME = os.path.join(run_folder, "output_table.csv")
+CSV_RBH_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_RBH.csv")
+CSV_STRICT_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_strict.csv")
+CSV_NS_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_non-strict.csv")
 # Decide on taxa input:
 TAX_DB = os.path.join(SCRIPT_FOLDER, "DB/taxdump/tax_names.txt")
 # database location
@@ -279,8 +283,9 @@ print("*******************")
 
 # part 3:
 if part_three.main(SECOND_BLAST_FOLDER, BACK_E_VALUE_THRESH, IDENTITY_THRESHOLD, COVERAGE_THRESHOLD, TEXTUAL_MATCH,
-                   TEXTUAL_SEQ_MATCH, ORIGIN_SPECIES, ACCESSION_REGEX, run_folder, MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST,
-                   CSV_OUTPUT_FILENAME, FASTA_OUTPUT_FOLDER, DEBUG, debug, good_tax_list, id_dic,
+                   TEXTUAL_SEQ_MATCH, ORIGIN_SPECIES, ACCESSION_REGEX, DESCRIPTION_REGEX, run_folder,
+                   MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST, CSV_RBH_OUTPUT_FILENAME, CSV_STRICT_OUTPUT_FILENAME,
+                   CSV_NS_OUTPUT_FILENAME, FASTA_OUTPUT_FOLDER, DEBUG, debug, good_tax_list, id_dic,
                    second_blast_for_ids_dict, blast2_gene_id_paths):
     print("part 3 done!")
     print("*******************")
