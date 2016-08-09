@@ -383,6 +383,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         all_organisms += [x for x in this_gene_dic.keys()]  # a list of the organisms with results
 
     # writing final csv output:
+    good_tax_list = [x.capitalize() for x in good_tax_list]  # doing this to avoid duplicate names
     if write_all_output_csv(all_genes_dict, all_organisms, csv_rbh_output_filename, csv_strict_output_filename,
                             csv_ns_output_filename, DEBUG, debug, good_tax_list):
         print "Wrote csv output to files: {},{},{}".format(csv_rbh_output_filename, csv_strict_output_filename,

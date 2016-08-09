@@ -31,14 +31,16 @@ def gene_list_to_csv(gene_list, taxid, out_file):
         # generating the csv we need for the analysis
         output.write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
         mg = mygene.MyGeneInfo()  # mygene module
-        genes_data = mg.querymany(gene_list, scopes='symbol,namereporter,accession', fields='uniprot,name,symbol',
+        genes_data = mg.querymany(gene_list, scopes='symbol,name,reporter,accession,ensemblprotein,retired',
+                                  fields='uniprot,name,symbol',
                                   species=taxid)
 
+        gene_count = 0
         for geneDic in genes_data:  # iterating over dicts
             try:  # parsing
-                original_gene_id = geneDic['symbol']
-                full_gene_name = geneDic['name']
-                uniprot_id = geneDic['uniprot']['Swiss-Prot']
+                original_gene_id = str(geneDic['symbol'])
+                full_gene_name = str(geneDic['name'])
+                uniprot_id = str(geneDic['uniprot']['Swiss-Prot'])
                 output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
             except KeyError:  # retrieving didn't succeed
                 print("didn't find value for %s" % geneDic['query'])  # didn't happen so far but still
@@ -54,8 +56,10 @@ def gene_list_to_csv(gene_list, taxid, out_file):
                     full_gene_name = this_gene_data[3]
                     uniprot_id = this_gene_data[0]
                     output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
-                except IndexError:
+                except urllib2.HTTPError:
                     print("didn't find value for %s in uniprot too." % geneDic['query'])
+
+            gene_count += 1
 
     if os.stat(out_file).st_size > 30:  # minimum file size because of the header
         # this means that the CSV creation worked.
