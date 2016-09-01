@@ -3,7 +3,8 @@
 import mygene
 import os
 import urllib2
-from RecBlastUtils import split
+from RecBlastUtils import split, write_sort_command_script
+import subprocess
 
 
 def gene_list_from_file(in_file):
@@ -82,8 +83,12 @@ def gene_file_to_csv(infile, tax_id, outfile=None):
     # if the outfile is not provided we will generate our own
     if not outfile:
         outfile = "{}.genes.csv".format(infile)
+        outfile_unsorted = "{}.unsorted_genes.csv".format(infile)
     input_accession_list = gene_list_from_file(infile)
-    if gene_list_to_csv(input_accession_list, tax_id, outfile):
+    if gene_list_to_csv(input_accession_list, tax_id, outfile_unsorted):
+        # sort uniq using a script:
+        script_path = write_sort_command_script(outfile_unsorted, outfile)
+        subprocess.check_call(script_path)
         return outfile
     else:
         return ""  # return an empty file name

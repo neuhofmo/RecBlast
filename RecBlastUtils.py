@@ -140,6 +140,19 @@ def write_blast_run_script(command_line):
     return script_path
 
 
+def write_sort_command_script(filename_to_sort, sorted_filename):
+    """Writing a sort uniq script to edit the gene csv file."""
+    script_path = "/tmp/sort_script.sh"  # default script location
+    with open(script_path, 'w') as script:
+        script.write("#! /bin/tcsh\n")
+        script.write("# The script is designed to run sort, uniq command from RecBlast\n")
+        command_line = "sort {0} | uniq > {1}".format(filename_to_sort, sorted_filename)
+        script.write(command_line)
+        # run permissions for the script:
+    os.chmod(script_path, 0751)
+    return script_path
+
+
 def merge_two_dicts(x, y):
     """Given two dicts, merge them into a new dict as a shallow copy."""
     z = x.copy()

@@ -58,7 +58,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
     """
     # defined in advance for efficiency:
     regex = re.compile(r'>.*=\d?\|')
-    gene_line_regex = re.compile(r'([A-Za-z0-9]+),(.+),([A-Za-z0-9]+)')
+    gene_line_regex = re.compile(r'([A-Za-z0-9]+),(.+),([A-Za-z0-9]+)$')
 
     # initialize a list for the blast output file paths
     blast_one_output_files = []
@@ -94,8 +94,8 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
                     gene_id_index += 1  # moving to the next gene on the list
 
                 except Exception, e:  # in case uniprot doesn't work, please notify!
-                    print "There is a problem with retrieving the sequences from UniProt. " \
-                          "Please try again later.\n{}".format(e)
+                    print "There is a problem with retrieving the sequences from UniProt, in line:\n{0}" \
+                          "Please try again later.\n{1}".format(line, e)
             csv_line_index += 1  # next row
 
     # creating a file with the information about the genes we are checking in this run.
