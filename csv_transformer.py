@@ -42,9 +42,9 @@ def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
                 original_gene_id = str(geneDic['symbol'])
                 full_gene_name = str(geneDic['name'])
                 uniprot_ids = geneDic['uniprot']['Swiss-Prot']
-                try:  # if we have more than one
+                if type(uniprot_ids) is list:  # if we have more than one
                     uniprot_id = str(uniprot_ids[0])
-                except IndexError:  # if we have only one
+                else:
                     uniprot_id = str(geneDic['uniprot']['Swiss-Prot'])
                 output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
             except KeyError:  # retrieving didn't succeed
@@ -88,12 +88,13 @@ def gene_file_to_csv(infile, tax_id, outfile=None, try_uniprot=False):
     # if the outfile is not provided we will generate our own
     if not outfile:
         outfile = "{}.genes.csv".format(infile)
-        outfile_unsorted = "{}.unsorted_genes.csv".format(infile)
+    outfile_unsorted = "{}.unsorted_genes.csv".format(infile)
     input_accession_list = gene_list_from_file(infile)
     if gene_list_to_csv(input_accession_list, tax_id, outfile_unsorted, try_uniprot):
         # sort uniq using a script:
         script_path = write_sort_command_script(outfile_unsorted, outfile)
         subprocess.check_call(script_path)
+        print("Sorted and merged file to {}".format(outfile))
         return outfile
     else:
         return ""  # return an empty file name

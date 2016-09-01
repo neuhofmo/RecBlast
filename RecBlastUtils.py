@@ -146,7 +146,7 @@ def write_sort_command_script(filename_to_sort, sorted_filename):
     with open(script_path, 'w') as script:
         script.write("#! /bin/tcsh\n")
         script.write("# The script is designed to run sort, uniq command from RecBlast\n")
-        command_line = "sort {0} | uniq > {1}".format(filename_to_sort, sorted_filename)
+        command_line = "cat {0} | sort | uniq > {1}\n".format(filename_to_sort, sorted_filename)
         script.write(command_line)
         # run permissions for the script:
     os.chmod(script_path, 0751)
