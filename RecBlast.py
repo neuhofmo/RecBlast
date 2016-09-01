@@ -83,6 +83,8 @@ parser.add_argument("--run_even_if_no_db_found", help="Performs a heavy reciproc
                     action="store_true")
 parser.add_argument("--keep_files", help="Keeps intermediate files after completion", action="store_true",
                     default=False)
+parser.add_argument("--try_uniprot", help="Looks for the sequences in UniProt too", action="store_true",
+                    default=False)
 parser.add_argument("--debug", help="Adds debug prints in various stages of the run.", action="store_true",
                     default=False)
 
@@ -189,7 +191,7 @@ if args.gene_csv:
     CSV_PATH = args.gene_file  # hope it's a good and valid file...
     print("Provided CSV with {} genes". format(file_len(CSV_PATH) - 1))
 else:  # if the csv is not provided, create it from a gene file
-    CSV_PATH = csv_transformer.gene_file_to_csv(remove_commas(args.gene_file), ORG_TAX_ID)
+    CSV_PATH = csv_transformer.gene_file_to_csv(remove_commas(args.gene_file), ORG_TAX_ID, try_uniprot=args.try_uniprot)
     # quits if no input could be converted
     print("Generated CSV with {} genes". format(file_len(CSV_PATH) - 1))
 

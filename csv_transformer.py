@@ -19,7 +19,7 @@ def gene_list_from_file(in_file):
     return accession_list
 
 
-def gene_list_to_csv(gene_list, taxid, out_file):
+def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
     """
     Receives a list of gene names/accession numbers and an update_match_results file path.
     :param gene_list: A list of gene names, uniprot IDs or accession numbers.
@@ -41,24 +41,29 @@ def gene_list_to_csv(gene_list, taxid, out_file):
             try:  # parsing
                 original_gene_id = str(geneDic['symbol'])
                 full_gene_name = str(geneDic['name'])
-                uniprot_id = str(geneDic['uniprot']['Swiss-Prot'])
+                uniprot_ids = geneDic['uniprot']['Swiss-Prot']
+                try:  # if we have more than one
+                    uniprot_id = str(uniprot_ids[0])
+                except IndexError:  # if we have only one
+                    uniprot_id = str(geneDic['uniprot']['Swiss-Prot'])
                 output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
             except KeyError:  # retrieving didn't succeed
                 print("didn't find value for %s" % geneDic['query'])  # didn't happen so far but still
-                print("Trying to get the value manually from uniprot in a patchy way:")
-                try:  # if it's a uniprot ID, this part should work.
-                    url2 = "http://www.uniprot.org/uniprot/"  # uniprot to fasta
-                    url_uniprot = url2 + geneDic['query'] + ".tab"  # the UNIPROT url
-                    request = urllib2.Request(url_uniprot)
-                    response = urllib2.urlopen(request)  # get request
-                    page = response.read(20000)  # read (up to 200000 lines)
-                    this_gene_data = split(split(page, '\n')[1], '\t')
-                    original_gene_id = this_gene_data[1]
-                    full_gene_name = this_gene_data[3]
-                    uniprot_id = this_gene_data[0]
-                    output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
-                except urllib2.HTTPError:
-                    print("didn't find value for %s in uniprot too." % geneDic['query'])
+                if try_uniprot:  # trying in uniprot
+                    print("Trying to get the value manually from uniprot in a patchy way:")
+                    try:  # if it's a uniprot ID, this part should work.
+                        url2 = "http://www.uniprot.org/uniprot/"  # uniprot to fasta
+                        url_uniprot = url2 + geneDic['query'] + ".tab"  # the UNIPROT url
+                        request = urllib2.Request(url_uniprot)
+                        response = urllib2.urlopen(request)  # get request
+                        page = response.read(20000)  # read (up to 200000 lines)
+                        this_gene_data = split(split(page, '\n')[1], '\t')
+                        original_gene_id = this_gene_data[1]
+                        full_gene_name = this_gene_data[3]
+                        uniprot_id = this_gene_data[0]
+                        output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
+                    except urllib2.HTTPError:
+                        print("didn't find value for %s in uniprot too." % geneDic['query'])
 
             gene_count += 1
 
@@ -71,7 +76,7 @@ def gene_list_to_csv(gene_list, taxid, out_file):
         return False  # we actually don't need to return False because of the exit. but still.
 
 
-def gene_file_to_csv(infile, tax_id, outfile=None):
+def gene_file_to_csv(infile, tax_id, outfile=None, try_uniprot=False):
     """
     Receive a file with a list of genes, as well as an optional output file name.
     Returns the filename of the update_match_results csv file.
@@ -85,7 +90,7 @@ def gene_file_to_csv(infile, tax_id, outfile=None):
         outfile = "{}.genes.csv".format(infile)
         outfile_unsorted = "{}.unsorted_genes.csv".format(infile)
     input_accession_list = gene_list_from_file(infile)
-    if gene_list_to_csv(input_accession_list, tax_id, outfile_unsorted):
+    if gene_list_to_csv(input_accession_list, tax_id, outfile_unsorted, try_uniprot):
         # sort uniq using a script:
         script_path = write_sort_command_script(outfile_unsorted, outfile)
         subprocess.check_call(script_path)
