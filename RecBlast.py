@@ -10,6 +10,8 @@ import part_two
 import part_three
 
 # this will be the stand alone version of RecBlast for linux.
+__version__ = "1.0.0"
+
 
 # flags:
 # DEBUG = False
@@ -87,6 +89,8 @@ parser.add_argument("--try_uniprot", help="Looks for the sequences in UniProt to
                     default=False)
 parser.add_argument("--debug", help="Adds debug prints in various stages of the run.", action="store_true",
                     default=False)
+parser.add_argument("-v", "--version", help="Prints version in formation.", action="store_true",
+                    default=False)
 
 args = parser.parse_args()
 
@@ -96,6 +100,11 @@ DEBUG = args.debug
 
 def debug(s):
     return debug_s(s, DEBUG)
+
+if args.version:
+    print("RecBlast stand alone version: {}".format(__version__))
+    print("All rights reserved to Efrat Rapoport and Moran Neuhof, 2016")
+    exit(1)
 
 # DATA VALIDATION, and local preparation of paths:
 
