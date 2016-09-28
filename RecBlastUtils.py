@@ -258,6 +258,7 @@ split = str.split
 replace = str.replace
 re_search = re.search
 re_sub = re.sub
+re_match = re.match
 upper = str.upper
 lower = str.lower
 

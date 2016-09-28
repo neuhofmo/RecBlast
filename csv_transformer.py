@@ -25,12 +25,14 @@ def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
     :param gene_list: A list of gene names, uniprot IDs or accession numbers.
     :param taxid: The reference taxon ID
     :param out_file: Output file path.
+    :param try_uniprot: True if you want to try querying the genes from uniprot.
     :return:
     """
     # update_match_results file
     with open(out_file, "w") as output:
         # generating the csv we need for the analysis
-        output.write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
+        output_write = output.write  # for efficiency
+        output_write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
         mg = mygene.MyGeneInfo()  # mygene module
         genes_data = mg.querymany(gene_list, scopes='symbol,name,reporter,accession,ensemblprotein,retired',
                                   fields='uniprot,name,symbol',
@@ -46,7 +48,7 @@ def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
                     uniprot_id = str(uniprot_ids[0])
                 else:
                     uniprot_id = str(geneDic['uniprot']['Swiss-Prot'])
-                output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
+                output_write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
             except KeyError:  # retrieving didn't succeed
                 print("didn't find value for %s" % geneDic['query'])  # didn't happen so far but still
                 if try_uniprot:  # trying in uniprot
@@ -61,7 +63,7 @@ def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
                         original_gene_id = this_gene_data[1]
                         full_gene_name = this_gene_data[3]
                         uniprot_id = this_gene_data[0]
-                        output.write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
+                        output_write("{}\n".format(",".join([original_gene_id, full_gene_name, uniprot_id])))
                     except urllib2.HTTPError:
                         print("didn't find value for %s in uniprot too." % geneDic['query'])
 

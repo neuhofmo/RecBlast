@@ -82,7 +82,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
                     # getting the FASTA sequence from uniprot using uniprot_id
                     fa = get_uni(uniprot_id, contact)
                     # cleaning the FASTA sequence
-                    result = re.match(regex, fa)
+                    result = re_match(regex, fa)
                     fa = re.sub(regex, '', fa)
                     fa = replace(fa, "\n", "")
                     fa = replace(fa, "|", "")
