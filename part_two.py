@@ -227,8 +227,16 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
             debug("Running the following line:\n{}".format(command_line))
 
             # writing the command to file and running the file
-            script_path = write_blast_run_script(command_line)
-            subprocess.check_call(script_path)
+            try:                                                    # this try paragraph was added later to handle
+                script_path = write_blast_run_script(command_line)  # I/O operations, delay in read/write operations...
+                subprocess.check_call(script_path)
+            except subprocess.CalledProcessError:                   # restarting the process (with a little sleep)
+                debug("Had a little problem with running this command: "
+                      "{}\nSo we are running it again.".format(command_line))
+                sleep(5)
+                script_path = write_blast_run_script(command_line)
+                sleep(10)
+                subprocess.check_call(script_path)
 
             # adding the filtered update_match_results file name here:
             blast_two_output_files.append(filtered_blast_output_file)

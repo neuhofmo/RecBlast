@@ -1,8 +1,8 @@
 ########################################################
 #### RecBlast stand-alone requirements for python2 #####
 ########################################################
-uuid
-biopython
-argparse
-requests
-mygene
+uuid>=1.30
+biopython>=1.6
+argparse>=1.4
+requests>=2.10
+mygene>=2.3

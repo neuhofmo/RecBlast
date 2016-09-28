@@ -145,8 +145,16 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
         debug("Running the following line:\n{}".format(command_line))
 
         # writing the command to file and running the file
-        script_path = write_blast_run_script(command_line)
-        subprocess.check_call(script_path)
+        try:                                                    # this try paragraph was added later to handle
+            script_path = write_blast_run_script(command_line)  # I/O operations, delay in read/write operations, etc.
+            subprocess.check_call(script_path)
+        except subprocess.CalledProcessError:                   # restarting the process (with a little sleep period)
+            debug("Had a little problem with running this command: "
+                  "{}\nSo we are running it again.".format(command_line))
+            sleep(5)
+            script_path = write_blast_run_script(command_line)
+            sleep(10)
+            subprocess.check_call(script_path)
 
         # adding the filtered file name here:
         blast_one_output_files.append(filtered_blast_out_filename)
