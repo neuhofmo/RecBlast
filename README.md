@@ -67,6 +67,9 @@ Or install them manually.
 The packages needed are currently: [biopython](https://github.com/biopython/biopython.github.io/), uuid, argparse, requests, [mygene](https://pypi.python.org/pypi/mygene)  
 If you have any problem installing them, try following [this help page](http://stackoverflow.com/questions/26053982/error-setup-script-exited-with-error-command-x86-64-linux-gnu-gcc-failed-wit)
 
+### Installing RecBlast on the AWS (Amazon Web Services) Cloud
+Please follow the directions on the [recblast-cloud github page](https://github.com/neuhofmo/recblast-cloud)
+
 ### Usage  
 RecBlast will create the output folder and save the output in your current directory.  
 In order to run RecBlast, just call RecBlast.py (`./RecBlast.py` or `python RecBlast.py` for example) with the following arguments:  

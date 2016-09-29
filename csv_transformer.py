@@ -3,7 +3,7 @@
 import mygene
 import os
 import urllib2
-from RecBlastUtils import split, write_sort_command_script
+from RecBlastUtils import split, write_sort_command_script, strip
 import subprocess
 
 
@@ -15,7 +15,7 @@ def gene_list_from_file(in_file):
     """
     with open(in_file, 'r') as accession_name:
         file_lines = accession_name.readlines()
-        accession_list = [x.strip() for x in file_lines]
+        accession_list = [strip(x) for x in file_lines]
     return accession_list
 
 
