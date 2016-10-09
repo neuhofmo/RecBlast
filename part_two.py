@@ -233,9 +233,9 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
             except subprocess.CalledProcessError:                   # restarting the process (with a little sleep)
                 debug("Had a little problem with running this command: "
                       "{}\nSo we are running it again.".format(command_line))
-                sleep(5)
-                script_path = write_blast_run_script(command_line)
                 sleep(10)
+                script_path = write_blast_run_script(command_line)
+                sleep(20)
                 subprocess.check_call(script_path)
 
             # adding the filtered update_match_results file name here:

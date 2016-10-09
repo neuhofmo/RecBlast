@@ -151,9 +151,9 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
         except subprocess.CalledProcessError:                   # restarting the process (with a little sleep period)
             debug("Had a little problem with running this command: "
                   "{}\nSo we are running it again.".format(command_line))
-            sleep(5)
-            script_path = write_blast_run_script(command_line)
             sleep(10)
+            script_path = write_blast_run_script(command_line)
+            sleep(20)
             subprocess.check_call(script_path)
 
         # adding the filtered file name here:
