@@ -31,7 +31,8 @@ MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST = 100
 # CPU = 1
 
 # fixed:
-OUTFMT = '6 staxids sseqid pident qcovs evalue sscinames sblastnames'
+# OUTFMT = '6 staxids sseqid pident qcovs evalue sscinames sblastnames'  # changed it to enable parsing
+OUTFMT = '6 staxids sseqid pident qcovs evalue sscinames sblastnames qseqid'
 ACCESSION_REGEX = re.compile(r'([A-Z0-9\._]+) ?')
 DESCRIPTION_REGEX = re.compile(r'\([^)]*\)')
 ORIGINAL_ID = 1  # start part_two from 0. change this when you want to start from mid-file
@@ -272,14 +273,15 @@ print "Run {0} started at: {1}".format(run_name, strftime('%H:%M:%S'))
 
 # part 1:
 print("starting to perform part_one.py")
-id_dic, blast1_output_files = part_one.main(CSV_PATH, APP_CONTACT_EMAIL, run_folder, FASTA_PATH, FIRST_BLAST_FOLDER,
-                                            FASTA_OUTPUT_FOLDER, BLASTP_PATH, DB, TAXA_LIST_FILE, OUTFMT,
-                                            MAX_TARGET_SEQS, E_VALUE_THRESH, COVERAGE_THRESHOLD, CPU, DEBUG, debug)
+id_dic, blast1_output_files, local_id_dic = part_one.main(CSV_PATH, APP_CONTACT_EMAIL, run_folder, FASTA_PATH,
+                                                          FIRST_BLAST_FOLDER, FASTA_OUTPUT_FOLDER, BLASTP_PATH, DB,
+                                                          TAXA_LIST_FILE, OUTFMT, MAX_TARGET_SEQS, E_VALUE_THRESH,
+                                                          COVERAGE_THRESHOLD, CPU, DEBUG, debug)
 print("BLASTP part 1 done!")
 print("*******************")
 
 # part 2:
-second_blast_for_ids_dict, blast2_output_files, blast2_gene_id_paths = part_two.main(FIRST_BLAST_FOLDER,
+second_blast_for_ids_dict, blast2_output_files, blast2_gene_id_paths = part_two.main(local_id_dic, FIRST_BLAST_FOLDER,
                                                                                      SECOND_BLAST_FOLDER, ORIGINAL_ID,
                                                                                      E_VALUE_THRESH, IDENTITY_THRESHOLD,
                                                                                      COVERAGE_THRESHOLD,

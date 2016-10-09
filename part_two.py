@@ -80,9 +80,26 @@ def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_o
     return awaiting_second_blast
 
 
-def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, identity_threshold, coverage_threshold,
-         accession_regex, run_folder, blastp_path, target_db, outfmt, max_target_seqs, back_e_value_thresh, cpu,
-         org_tax_id, DEBUG, debug, input_list=None):
+def split_blast_files(blast_out_filename, local_dic):
+    """ Going over the blast output file, and splitting it."""
+    with open(blast_out_filename, 'r') as blast_out:
+        for line in blast_out:
+            # getting the sequence identifier (which is the key for the local_id_dic)
+            local_seq_id = split(line, '\t')[-1]
+            try:
+                # reading the blast file output name
+                blast_out_name = local_dic[local_seq_id][1]
+                # adding this line to the original file
+                with open(blast_out_name, 'a') as specific_blast_out:
+                    specific_blast_out.write(line)
+            except Exception, e:
+                print "Problem with parsing line, sequence identifier may not match the dictionary. Check it."
+    return True
+
+
+def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_value_thresh, identity_threshold,
+         coverage_threshold, accession_regex, run_folder, blastp_path, target_db, outfmt, max_target_seqs,
+         back_e_value_thresh, cpu, org_tax_id, DEBUG, debug, input_list=None):
     """
     Main function of part 2. Starts from first blast and ends with the second blast.
     """
@@ -100,6 +117,14 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
     blast_two_gene_id_paths = []  # folder paths for the second blast
     second_blast_for_ids_dict = {}  # a dictionary containing all the parsed genes that will be sent to 2nd blast
     rbh_dict = {}  # a dictionary where key=original_id, value={key=organism: value=accession}
+
+    # TODO: at this point I added the unified files (that's the important part)
+    filtered_blast_out_filename = join_folder(first_blast_folder, "all_results.taxa_filtered.txt")
+    if split_blast_files(filtered_blast_out_filename, local_id_dic):
+        debug("Blast output parsed successfully.")
+    else:
+        debug("Parsing did not work. exiting.")
+        exit(1)
 
     # each file represents blast results for one gene.
     # per each file, we inspect every line and check if its quality is high enough to become a
