@@ -17,7 +17,7 @@ TEMP_FILES_PATH = os.getcwd()
 
 def prepare_files(items, file_name, user_id, files_path=TEMP_FILES_PATH):
     """Receives a list of items and a file to write them to, then writes them to file and returns the file path."""
-    full_path = os.path.join(files_path, "_".join([user_id, file_name]))
+    full_path = join_folder(files_path, "_".join([user_id, file_name]))
     # items = list(set(items))  # make the list unique  # unnecessary
     with open(full_path, 'w') as f:
         for item in items:
@@ -54,8 +54,8 @@ def zip_results(fasta_output_path, csv_rbh_output_filename, csv_strict_output_fi
     :param output_path:
     :return:
     """
-    zip_file = os.path.join(output_path, "output.zip")
-    fastas = [os.path.join(fasta_output_path, x) for x in os.listdir(fasta_output_path)]
+    zip_file = join_folder(output_path, "output.zip")
+    fastas = [join_folder(fasta_output_path, x) for x in os.listdir(fasta_output_path)]
     with zipfile.ZipFile(zip_file, mode='w') as zf:
         # adding all fasta files
         for fasta in fastas:
@@ -122,7 +122,7 @@ def cleanup(path, storage_folder, run_id):
     """
     # compress all files in path:
     # fasta_path
-    path_archive = os.path.join(storage_folder, "{}.all.tar.gz".format(run_id))
+    path_archive = join_folder(storage_folder, "{}.all.tar.gz".format(run_id))
     if targz_folder(path_archive, path):  # compress run_folder
         shutil.rmtree(path)  # delete run folder
     return True
@@ -261,4 +261,4 @@ re_sub = re.sub
 re_match = re.match
 upper = str.upper
 lower = str.lower
-
+join_folder = os.path.join

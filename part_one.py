@@ -83,7 +83,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
                     fa = get_uni(uniprot_id, contact)
                     # cleaning the FASTA sequence
                     result = re_match(regex, fa)
-                    fa = re.sub(regex, '', fa)
+                    fa = re_sub(regex, '', fa)
                     fa = replace(fa, "\n", "")
                     fa = replace(fa, "|", "")
                     sequence = fa  # before we add the header to the fasta, we want to keep the sequence itself
@@ -100,7 +100,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
 
     # creating a file with the information about the genes we are checking in this run.
     # this pickle will be used for reference later
-    pickle.dump(id_dic, open(os.path.join(run_folder, 'genes_for_inspection_full.p'), 'wb'))
+    pickle.dump(id_dic, open(join_folder(run_folder, 'genes_for_inspection_full.p'), 'wb'))
     debug("Success in updating genes_for_inspection file")
 
     # generating FASTA files and performing the blast:
@@ -109,23 +109,23 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
         debug("gene_index_id: {}".format(gene_id_index))
         job_name = "fasta-%s-%s" % (gene_id_index, valueList[1])  # job_name: index-common_id
         debug("job_name: {}".format(job_name))
-        fasta_filename = os.path.join(fasta_path, "{}.fasta".format(job_name))
+        fasta_filename = join_folder(fasta_path, "{}.fasta".format(job_name))
         blast_out_filename = "{}_full.txt".format(job_name)  # BLAST update_match_results file
         # the update_match_results file after filtering taxa:
         filtered_blast_out_filename = "{}.taxa_filtered.txt".format(job_name)
         with open(fasta_filename, 'w') as output:
             output.write("{}\n\n".format(valueList[0]))  # write fasta to update_match_results file
 
-        blast_output_file = os.path.join(first_blast_folder, blast_out_filename)
-        filtered_blast_out_filename = os.path.join(first_blast_folder, filtered_blast_out_filename)
+        blast_output_file = join_folder(first_blast_folder, blast_out_filename)
+        filtered_blast_out_filename = join_folder(first_blast_folder, filtered_blast_out_filename)
 
         # copy the fasta file to the fasta_output folder
         fasta_output_name = replace(fasta_filename, '.fasta', '')
-        fasta_output_filename_rbh = os.path.join(fasta_output_folder,
+        fasta_output_filename_rbh = join_folder(fasta_output_folder,
                                                  os.path.basename(fasta_output_name) + '_RBH.fasta')
-        fasta_output_filename_ns = os.path.join(fasta_output_folder,
+        fasta_output_filename_ns = join_folder(fasta_output_folder,
                                                 os.path.basename(fasta_output_name) + '_non-strict.fasta')
-        fasta_output_filename_strict = os.path.join(fasta_output_folder,
+        fasta_output_filename_strict = join_folder(fasta_output_folder,
                                                     os.path.basename(fasta_output_name) + '_strict.fasta')
         # 3 fasta output files:
         shutil.copy(fasta_filename, fasta_output_filename_rbh)  # copy
@@ -163,7 +163,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
 
     print "Prepared and ran first BLAST on all FASTA files."
     # dumping id_dic file for pickle:
-    pickle.dump(id_dic, open(os.path.join(run_folder, "id_dic.p"), 'wb'))
+    pickle.dump(id_dic, open(join_folder(run_folder, "id_dic.p"), 'wb'))
     print "Part 1 done at {}".format(strftime('%H:%M:%S'))
     return id_dic, blast_one_output_files
 

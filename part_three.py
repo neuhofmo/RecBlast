@@ -236,13 +236,13 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
     # deal with args in debug mode:
     if DEBUG:
         if not second_blast_for_ids_dict:
-            second_blast_for_ids_dict = pickle.load(open(os.path.join(run_folder, "second_blast_for_ids_dict.p"), 'rb'))
+            second_blast_for_ids_dict = pickle.load(open(join_folder(run_folder, "second_blast_for_ids_dict.p"), 'rb'))
         if not id_dic:
-            id_dic = pickle.load(open(os.path.join(run_folder, "id_dic.p"), 'rb'))
+            id_dic = pickle.load(open(join_folder(run_folder, "id_dic.p"), 'rb'))
         if not gene_paths_list:
             # getting the dir paths of each gene
-            gene_paths_list = [os.path.join(second_blast_folder, x) for x in os.listdir(second_blast_folder) if
-                               os.path.isdir(os.path.join(second_blast_folder, x))]
+            gene_paths_list = [join_folder(second_blast_folder, x) for x in os.listdir(second_blast_folder) if
+                               os.path.isdir(join_folder(second_blast_folder, x))]
 
     # this list contains all genes and their id numbers
     # instead of pickle, getting dict from from the gene_list_to_csv
@@ -266,11 +266,11 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         target_sequence = strip(target[4])
         del target  # don't need it anymore
 
-        debug_file = open(os.path.join(run_folder, "missedhits_for_gene_%s(%s).txt") % (gene_id, target_name1), "w")
+        debug_file = open(join_folder(run_folder, "missedhits_for_gene_%s(%s).txt") % (gene_id, target_name1), "w")
 
         # a list containing all the files we are going to work on, for this gene id:
         all_files_in_gene_id = [file_name for file_name in os.listdir(gene_path_folder) if
-                                (os.path.isfile(os.path.join(gene_path_folder, file_name)) and
+                                (os.path.isfile(join_folder(gene_path_folder, file_name)) and
                                  file_name.endswith('.taxa_filtered.txt'))]
 
         indexes_per_id = []
@@ -281,10 +281,10 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         for index_file_name in all_files_in_gene_id:
             index = int(split(split(index_file_name, "_")[6], '.')[0])  # extracting index
             indexes_per_id.append(index)  # add index
-            debug("reading {}".format(os.path.join(gene_path_folder, index_file_name)))
+            debug("reading {}".format(join_folder(gene_path_folder, index_file_name)))
             # now read every max_attempts_to_complete_rec_blast+1 lines of every file and save it in a dictionary,
             # unless the file is shorter and then read all the lines from the file
-            with open(os.path.join(gene_path_folder, index_file_name), 'r') as index_infile:
+            with open(join_folder(gene_path_folder, index_file_name), 'r') as index_infile:
                 index_files_dict[index] = list(islice(index_infile, max_attempts_to_complete_rec_blast))
 
         index_set = set(indexes_per_id)  # converting to set
@@ -343,7 +343,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                                                             DEBUG, debug)
                         debug("Calculated matches for gene_id {0} enumerator {1}".format(gene_id, enumerator))
                         # add the fasta sequence to this fasta output (declared in part 1)
-                        fasta_output_file_name = os.path.join(fasta_output_folder,
+                        fasta_output_file_name = join_folder(fasta_output_folder,
                                                               "fasta-{0}-{1}".format(gene_id, target_name1))  # basename
                         fasta_output_filename_rbh = fasta_output_file_name + '_RBH.fasta'
                         fasta_output_filename_ns = fasta_output_file_name + '_non-strict.fasta'
@@ -375,7 +375,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                     indexes_to_remove, index_set))
 
         # documenting full reciprocal blast results for this gene
-        pickle.dump(this_gene_dic, open(os.path.join(run_folder, 'full_results_for_ID_%s-%s.p' %
+        pickle.dump(this_gene_dic, open(join_folder(run_folder, 'full_results_for_ID_%s-%s.p' %
                                                      (gene_id, target_name1)), 'wb'))
 
         # add this_gene_dic to a final result dic

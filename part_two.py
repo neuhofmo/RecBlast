@@ -91,7 +91,7 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
         assert(type(input_list) == list)  # make sure it's a list
         listing = input_list
     else:  # get the input from the blast folder.
-        listing = sorted([os.path.join(first_blast_folder, x) for x in os.listdir(first_blast_folder)
+        listing = sorted([join_folder(first_blast_folder, x) for x in os.listdir(first_blast_folder)
                           if x.endswith('.taxa_filtered.txt')])
 
     # manually define the id of the gene you are starting with (default is 0)
@@ -117,7 +117,7 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
         debug("working on file %s , ID: %s\n" % (blast_result_file, original_id))
 
         # assigning folder for the blast results
-        new_blast_path = os.path.join(second_blast_folder, "id_{}".format(original_id))
+        new_blast_path = join_folder(second_blast_folder, "id_{}".format(original_id))
         if os.path.exists(new_blast_path):
             debug("Folder {} already exists!".format(new_blast_path))
         else:
@@ -188,7 +188,7 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
                 debug("Done converting all gis for id %s" % original_id)
 
         # documenting all the genes awaiting second blast, per gene
-        pickle.dump(awaiting_second_blast, open(os.path.join(run_folder, 'genes_for_inspection_id_%s.p' % original_id),
+        pickle.dump(awaiting_second_blast, open(join_folder(run_folder, 'genes_for_inspection_id_%s.p' % original_id),
                                                 'wb'))
         # adding to dict to be used later:
         second_blast_for_ids_dict[original_id] = awaiting_second_blast
@@ -203,7 +203,7 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
             # files names:
             job_name = "id_%s_index_%s" % (original_id, match_id)  # the job name (also used in the file name)
             fasta_name = "secondblast_fasta_for_{}.fasta".format(job_name)
-            full_fasta_path = os.path.join(new_blast_path, fasta_name)
+            full_fasta_path = join_folder(new_blast_path, fasta_name)
             debug("Going to run {0} in full first_blast_folder: {1}".format(job_name, full_fasta_path))
             blast_output_file = replace(full_fasta_path, ".fasta", "_full.txt")
             filtered_blast_output_file = replace(full_fasta_path, ".fasta", ".taxa_filtered.txt")
@@ -247,8 +247,8 @@ def main(first_blast_folder, second_blast_folder, original_id, e_value_thresh, i
 
     debug("Done with part 2.")
     # dumping second blast and rbh dict as backup
-    pickle.dump(second_blast_for_ids_dict, open(os.path.join(run_folder, "second_blast_for_ids_dict.p"), 'wb'))
-    pickle.dump(rbh_dict, open(os.path.join(run_folder, "rbh_dict.p"), 'wb'))
+    pickle.dump(second_blast_for_ids_dict, open(join_folder(run_folder, "second_blast_for_ids_dict.p"), 'wb'))
+    pickle.dump(rbh_dict, open(join_folder(run_folder, "rbh_dict.p"), 'wb'))
     return second_blast_for_ids_dict, blast_two_output_files, blast_two_gene_id_paths
 
 # Done with part 2

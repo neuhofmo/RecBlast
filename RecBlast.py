@@ -143,31 +143,31 @@ if args.run_name:
     if args.output_path:
         run_folder = args.output_path  # assigning run_folder (default)
     else:
-        run_folder = os.path.join(base_folder, run_name)
+        run_folder = join_folder(base_folder, run_name)
 else:
     run_name = str(uuid4())  # randomly assigned run_name
-    run_folder = os.path.join(base_folder, run_name)
+    run_folder = join_folder(base_folder, run_name)
 
 create_folder_if_needed(run_folder)  # creating the folder
 
 # creating the rest of the folders:
 # folders:
-FIRST_BLAST_FOLDER = os.path.join(run_folder, "first_blast")
+FIRST_BLAST_FOLDER = join_folder(run_folder, "first_blast")
 create_folder_if_needed(FIRST_BLAST_FOLDER)  # creating the folder
-SECOND_BLAST_FOLDER = os.path.join(run_folder, "second_blast")
+SECOND_BLAST_FOLDER = join_folder(run_folder, "second_blast")
 create_folder_if_needed(SECOND_BLAST_FOLDER)  # creating the folder
-FASTA_PATH = os.path.join(run_folder, "fasta_path")
+FASTA_PATH = join_folder(run_folder, "fasta_path")
 create_folder_if_needed(FASTA_PATH)
-FASTA_OUTPUT_FOLDER = os.path.join(run_folder, "fasta_output")
+FASTA_OUTPUT_FOLDER = join_folder(run_folder, "fasta_output")
 create_folder_if_needed(FASTA_OUTPUT_FOLDER)
-# CSV_OUTPUT_FILENAME = os.path.join(run_folder, "output_table.csv")
-CSV_RBH_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_RBH.csv")
-CSV_STRICT_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_strict.csv")
-CSV_NS_OUTPUT_FILENAME = os.path.join(run_folder, "output_table_non-strict.csv")
+# CSV_OUTPUT_FILENAME = join_folder(run_folder, "output_table.csv")
+CSV_RBH_OUTPUT_FILENAME = join_folder(run_folder, "output_table_RBH.csv")
+CSV_STRICT_OUTPUT_FILENAME = join_folder(run_folder, "output_table_strict.csv")
+CSV_NS_OUTPUT_FILENAME = join_folder(run_folder, "output_table_non-strict.csv")
 # Decide on taxa input:
-TAX_DB = os.path.join(SCRIPT_FOLDER, "DB/taxdump/tax_names.txt")
+TAX_DB = join_folder(SCRIPT_FOLDER, "DB/taxdump/tax_names.txt")
 # database location
-DB_FOLDER = os.path.join(SCRIPT_FOLDER, "DB")
+DB_FOLDER = join_folder(SCRIPT_FOLDER, "DB")
 
 
 # parsing and creating taxa files and parameters:
@@ -235,8 +235,8 @@ else:  # find the nr DB yourself
     print("Found $BLASTDB path in {}".format(BLASTDB_PATH))
 
     # check if nr exists on the local system
-    if exists_not_empty(os.path.join(BLASTDB_PATH, "nr.00.phd")):
-        DB = os.path.join(BLASTDB_PATH, "nr")
+    if exists_not_empty(join_folder(BLASTDB_PATH, "nr.00.phd")):
+        DB = join_folder(BLASTDB_PATH, "nr")
     else:
         print("Could not find the nr protein database in your $BLASTDB folder ({}).".format(BLASTDB_PATH))
         print("This means one of the following:\n"
@@ -252,14 +252,14 @@ else:  # find the nr DB yourself
 if args.target_db:  # if the user provided
     TARGET_DB = args.target_db
 else:
-    TARGET_DB_FOLDER = os.path.join(DB_FOLDER, ORG_TAX_ID)  # this is where our db should be
+    TARGET_DB_FOLDER = join_folder(DB_FOLDER, ORG_TAX_ID)  # this is where our db should be
     # check if it exists - if so use it as a db
     if os.path.exists(TARGET_DB_FOLDER):
-        TARGET_DB = os.path.join(TARGET_DB_FOLDER, 'db')
+        TARGET_DB = join_folder(TARGET_DB_FOLDER, 'db')
         print "{} already has a local version of BLASTP DB!" .format(ORG_TAX_ID)
     else:  # if not create an alias
         print("No local version of {} database exists. Creating a subset now.".format(ORG_TAX_ID))
-        gi_file = os.path.join(run_folder, "taxon_gi_file_list.txt")  # the path to the new file
+        gi_file = join_folder(run_folder, "taxon_gi_file_list.txt")  # the path to the new file
         TARGET_DB = subset_db(ORG_TAX_ID, gi_file, DB_FOLDER, DB, args.run_even_if_no_db_found, DEBUG, debug)
 
 
