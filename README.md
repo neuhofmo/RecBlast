@@ -1,6 +1,7 @@
 # RecBlast - stand-alone version  
-RecBlast: Reciprocal Blast for the masses.  
-https://zenodo.org/badge/63588926.svg
+RecBlast: Reciprocal Blast for the masses. 
+![alt text](https://zenodo.org/badge/63588926.svg "RecBlast v1.1.1")
+
 
 Welcome to RecBlast stand-alone.  
 RecBlast stand-alone is a local, downloadable version of RecBlast. RecBlast is a powerful tool to which performs large-scale orthology detection across multiple genes and multiple taxa (MGMT) by implementing fast reciprocal protein Blast.  
