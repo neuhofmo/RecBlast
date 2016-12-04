@@ -1,6 +1,6 @@
 # RecBlast - stand-alone version  
-RecBlast: Reciprocal Blast for the masses. 
-![alt text](https://zenodo.org/badge/63588926.svg "RecBlast v1.1.1")
+RecBlast: Reciprocal Blast for the masses.  
+[![DOI](https://zenodo.org/badge/63588926.svg)](https://zenodo.org/badge/latestdoi/63588926)
 
 
 Welcome to RecBlast stand-alone.  
