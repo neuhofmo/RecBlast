@@ -3,7 +3,6 @@
 import pickle
 from sys import exit
 from RecBlastUtils import *
-# from RecBlastParams import *
 
 # Description:
 # This is part 2 of the RecBlast stand-alone version.
@@ -80,26 +79,32 @@ def gi_to_fasta(awaiting_second_blast, accession_list, matching_orgs, rbh_dict_o
     return awaiting_second_blast
 
 
-def split_blast_files(blast_out_filename, local_dic):
+def split_blast_files(blast_out_filename, local_dic, first_blast_folder, DEBUG, debug):
     """ Going over the blast output file, and splitting it."""
     with open(blast_out_filename, 'r') as blast_out:
         for line in blast_out:
             # getting the sequence identifier (which is the key for the local_id_dic)
-            local_seq_id = split(line, '\t')[-1]
+            local_seq_id = strip(split(line, '\t')[-1])
+            # debug("local_seq_id is {}".format(local_seq_id))  # DEBUG print
             try:
                 # reading the blast file output name
                 blast_out_name = local_dic[local_seq_id][1]
+                # debug("blast_out_name: {}".format(blast_out_name))  # DEBUG print
+                full_blast_out_name = join_folder(first_blast_folder, blast_out_name)
                 # adding this line to the original file
-                with open(blast_out_name, 'a') as specific_blast_out:
+                with open(full_blast_out_name, 'a') as specific_blast_out:
                     specific_blast_out.write(line)
+                    debug("Wrote the following line to {0}:\n{1}".format(full_blast_out_name, line))
             except Exception, e:
                 print "Problem with parsing line, sequence identifier may not match the dictionary. Check it."
+                print line
+                print str(e)
     return True
 
 
 def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_value_thresh, identity_threshold,
          coverage_threshold, accession_regex, run_folder, blastp_path, target_db, outfmt, max_target_seqs,
-         back_e_value_thresh, cpu, org_tax_id, DEBUG, debug, input_list=None):
+         back_e_value_thresh, cpu, org_tax_id, run_all, DEBUG, debug, input_list=None):
     """
     Main function of part 2. Starts from first blast and ends with the second blast.
     """
@@ -118,13 +123,14 @@ def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_v
     second_blast_for_ids_dict = {}  # a dictionary containing all the parsed genes that will be sent to 2nd blast
     rbh_dict = {}  # a dictionary where key=original_id, value={key=organism: value=accession}
 
-    # TODO: at this point I added the unified files (that's the important part)
-    filtered_blast_out_filename = join_folder(first_blast_folder, "all_results.taxa_filtered.txt")
-    if split_blast_files(filtered_blast_out_filename, local_id_dic):
-        debug("Blast output parsed successfully.")
-    else:
-        debug("Parsing did not work. exiting.")
-        exit(1)
+    if run_all:  # at this point I added the unified files
+        debug("Splitting BLAST results to individual files.")
+        filtered_blast_out_filename = join_folder(first_blast_folder, "all_results.taxa_filtered.txt")
+        if split_blast_files(filtered_blast_out_filename, local_id_dic, first_blast_folder, DEBUG, debug):
+            debug("Blast output parsed successfully.")  # The files should be split by now and we are converging
+        else:
+            debug("Parsing did not work. exiting.")
+            exit(1)
 
     # each file represents blast results for one gene.
     # per each file, we inspect every line and check if its quality is high enough to become a
@@ -150,67 +156,72 @@ def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_v
             debug("Created new blast first_blast_folder at {}".format(new_blast_path))
         blast_two_gene_id_paths.append(new_blast_path)
 
-        with open(blast_result_file, 'r') as f:  # open file for reading
-            debug("iterating over lines in %s" % blast_result_file)
+        try:
+            with open(blast_result_file, 'r') as f:  # open file for reading
+                debug("iterating over lines in %s" % blast_result_file)
 
-            # initialize:
-            successful_match_gis = []  # for each gene (=file), add the seq_id of every good match
-            matching_organisms = {}  # to match the organism in the successful accession_ids
+                # initialize:
+                successful_match_gis = []  # for each gene (=file), add the seq_id of every good match
+                matching_organisms = {}  # to match the organism in the successful accession_ids
 
-            for line in f:  # read every line
-                # parse every line and take relevant information
-                line_list = split(line)
-                try:  # if it's the old format: gi|761916618|ref|XP_011407293.1|
-                    accession_v = split(line_list[1], '|')[3]
-                except IndexError:  # new format: using regex
-                    result = re_search(accession_regex, line_list[2])
-                    accession_v = result.group(1)
-                identity = line_list[2]
-                coverage = line_list[3]
-                evalue = line_list[4]
-                organism = " ".join([line_list[5], line_list[6]])
+                for line in f:  # read every line
+                    # parse every line and take relevant information
+                    line_list = split(line)
+                    try:  # if it's the old format: gi|761916618|ref|XP_011407293.1|
+                        accession_v = split(line_list[1], '|')[3]
+                    except IndexError:  # new format: using regex
+                        result = re_search(accession_regex, line_list[2])
+                        accession_v = result.group(1)
+                    identity = line_list[2]
+                    coverage = line_list[3]
+                    evalue = line_list[4]
+                    organism = " ".join([line_list[5], line_list[6]])
 
-                debug("seq_id: {0}; identity: {1}; coverage: {2}; evalue: {3}; organism: {4}".format(accession_v,
-                                                                                                     identity, coverage,
-                                                                                                     evalue, organism))
+                    debug("seq_id: {0}; identity: {1}; coverage: {2}; evalue: {3}; organism: {4}".format(accession_v,
+                                                                                                         identity,
+                                                                                                         coverage,
+                                                                                                         evalue,
+                                                                                                         organism))
 
-                # quality check. if the candidate is good enough, we keep it
-                if float(evalue) < e_value_thresh \
-                        and float(identity) >= identity_threshold \
-                        and float(coverage) >= coverage_threshold:
-                    successful_match_gis.append(accession_v)  # append good match to successful_match_gis
-                    matching_organisms[accession_v] = organism
-                    # the idea is to save the organism the first time we see it to identify RBH
-                    try:
-                        debug("Already seen organism {0} for id {1}".format(rbh_dict[original_id][organism],
-                                                                            original_id))
-                    except KeyError:
-                        rbh_dict[original_id][organism] = accession_v
+                    # quality check. if the candidate is good enough, we keep it
+                    if float(evalue) < e_value_thresh \
+                            and float(identity) >= identity_threshold \
+                            and float(coverage) >= coverage_threshold:
+                        successful_match_gis.append(accession_v)  # append good match to successful_match_gis
+                        matching_organisms[accession_v] = organism
+                        # the idea is to save the organism the first time we see it to identify RBH
+                        try:
+                            debug("Already seen organism {0} for id {1}".format(rbh_dict[original_id][organism],
+                                                                                original_id))
+                        except KeyError:
+                            rbh_dict[original_id][organism] = accession_v
 
-            print "found %s matches for second blast!" % len(successful_match_gis)
+                print "found %s matches for second blast!" % len(successful_match_gis)
 
-            # If there were no matches - moving on to the next line
-            if len(successful_match_gis) == 0:
-                print "No successful matches at all for original id {0} in file {1}".format(original_id,
-                                                                                            blast_result_file)
-                original_id += 1  # increment
-                continue  # moving on to next file
+                # If there were no matches - moving on to the next line
+                if len(successful_match_gis) == 0:
+                    print "No successful matches at all for original id {0} in file {1}".format(original_id,
+                                                                                                blast_result_file)
+                    original_id += 1  # increment
+                    continue  # moving on to next file
 
-            # we can't send long lists of genes to entrez, so if the list is long we send it in chunks
-            # per each candidate for second blast we extract FASTA and info about the taxa it belongs to
-            elif len(successful_match_gis) > 200:
-                chunks = [successful_match_gis[x:x + 100] for x in xrange(0, len(successful_match_gis), 100)]
-                for chunk in chunks:
-                    awaiting_second_blast_partial = gi_to_fasta(awaiting_second_blast, chunk, matching_organisms,
-                                                                rbh_dict[original_id], DEBUG, debug)
-                    debug("Done importing chunk.")
-                    # merge all the dictionaries after splitting to chunks
-                    awaiting_second_blast = merge_two_dicts(awaiting_second_blast, awaiting_second_blast_partial)
+                # we can't send long lists of genes to entrez, so if the list is long we send it in chunks
+                # per each candidate for second blast we extract FASTA and info about the taxa it belongs to
+                elif len(successful_match_gis) > 200:
+                    chunks = [successful_match_gis[x:x + 100] for x in xrange(0, len(successful_match_gis), 100)]
+                    for chunk in chunks:
+                        awaiting_second_blast_partial = gi_to_fasta(awaiting_second_blast, chunk, matching_organisms,
+                                                                    rbh_dict[original_id], DEBUG, debug)
+                        debug("Done importing chunk.")
+                        # merge all the dictionaries after splitting to chunks
+                        awaiting_second_blast = merge_two_dicts(awaiting_second_blast, awaiting_second_blast_partial)
 
-            else:  # do it for all the genes without splitting
-                awaiting_second_blast = gi_to_fasta(awaiting_second_blast, successful_match_gis, matching_organisms,
-                                                    rbh_dict[original_id], DEBUG, debug)
-                debug("Done converting all gis for id %s" % original_id)
+                else:  # do it for all the genes without splitting
+                    awaiting_second_blast = gi_to_fasta(awaiting_second_blast, successful_match_gis, matching_organisms,
+                                                        rbh_dict[original_id], DEBUG, debug)
+                    debug("Done converting all gis for id %s" % original_id)
+        except IOError:
+            debug("No results for file {}".format(blast_result_file))
 
         # documenting all the genes awaiting second blast, per gene
         pickle.dump(awaiting_second_blast, open(join_folder(run_folder, 'genes_for_inspection_id_%s.p' % original_id),
@@ -225,7 +236,7 @@ def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_v
         for match_id, fasta_seq_list in awaiting_second_blast.iteritems():
             # each item is a gene we need to create a fasta file for
 
-            # files names:
+            # file names:
             job_name = "id_%s_index_%s" % (original_id, match_id)  # the job name (also used in the file name)
             fasta_name = "secondblast_fasta_for_{}.fasta".format(job_name)
             full_fasta_path = join_folder(new_blast_path, fasta_name)
@@ -252,14 +263,14 @@ def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_v
             debug("Running the following line:\n{}".format(command_line))
 
             # writing the command to file and running the file
-            try:                                                    # this try paragraph was added later to handle
-                script_path = write_blast_run_script(command_line)  # I/O operations, delay in read/write operations...
-                subprocess.check_call(script_path)
+            try:                                                        # this try paragraph was added later to handle
+                script_path = write_blast_run_script(command_line, run_folder)  # I/O operations,
+                subprocess.check_call(script_path)                              # delay in read/write operations...
             except subprocess.CalledProcessError:                   # restarting the process (with a little sleep)
                 debug("Had a little problem with running this command: "
                       "{}\nSo we are running it again.".format(command_line))
                 sleep(10)
-                script_path = write_blast_run_script(command_line)
+                script_path = write_blast_run_script(command_line, run_folder)
                 sleep(20)
                 subprocess.check_call(script_path)
 

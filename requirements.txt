@@ -6,3 +6,7 @@ biopython>=1.6
 argparse>=1.4
 requests>=2.10
 mygene>=2.3
+numpy
+pandas
+matplotlib
+seaborn

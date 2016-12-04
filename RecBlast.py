@@ -8,9 +8,10 @@ from uuid import uuid4
 import part_one
 import part_two
 import part_three
+from RecBlastFigures import *
 
 # this will be the stand alone version of RecBlast for linux.
-__version__ = "1.0.0"
+__version__ = "1.1.1"
 
 
 # flags:
@@ -84,6 +85,10 @@ parser.add_argument("--string_similarity", help="The string similarity value for
 parser.add_argument("--run_even_if_no_db_found", help="Performs a heavy reciprocal blast. "
                                                       "Not recommended in most cases. See documentation for use cases.",
                     action="store_true")
+parser.add_argument("--run_all", help="Runs BLAST on all sequences together instead of running separately."
+                                      "Recommended mostly in small runs in machines with large available RAM. "
+                                      "Not recommended in most cases. See documentation for use cases.",
+                    action="store_true", default=False)  # added to enable case 2
 parser.add_argument("--keep_files", help="Keeps intermediate files after completion", action="store_true",
                     default=False)
 parser.add_argument("--try_uniprot", help="Looks for the sequences in UniProt too", action="store_true",
@@ -126,13 +131,14 @@ else:
 # locating BLASTP path on your system
 BLASTP_PATH = "Not valid"
 try:
-    BLASTP_PATH = subprocess.check_output(["which", "blastp"], universal_newlines=True).strip()
+    BLASTP_PATH = strip(subprocess.check_output(["which", "blastp"], universal_newlines=True))
     debug("BLASTP found in {}".format(BLASTP_PATH))
 except subprocess.CalledProcessError:
     print("No BLASTP found. Please check install blast properly or make sure it's in $PATH. Aborting.")
     exit(1)
 
 CPU = args.num_threads
+RUN_ALL = args.run_all
 
 # script folder
 SCRIPT_FOLDER = os.path.dirname(os.path.abspath(__file__))
@@ -208,7 +214,8 @@ else:  # if the csv is not provided, create it from a gene file
 # validating the taxa list files
 # converting taxa names list
 (TAXA_LIST_FILE, bad_tax_list, good_tax_list) = taxa_to_taxid.convert_tax_to_taxid(tax_name_dict, tax_id_dict,
-                                                                                   args.taxa_list_file)
+                                                                                   args.taxa_list_file, ORIGIN_SPECIES,
+                                                                                   ORG_TAX_ID)
 if len(bad_tax_list) > 0:
     print("Bad taxa names found in the file provided:")
     print("\n".join(bad_tax_list))
@@ -276,7 +283,7 @@ print("starting to perform part_one.py")
 id_dic, blast1_output_files, local_id_dic = part_one.main(CSV_PATH, APP_CONTACT_EMAIL, run_folder, FASTA_PATH,
                                                           FIRST_BLAST_FOLDER, FASTA_OUTPUT_FOLDER, BLASTP_PATH, DB,
                                                           TAXA_LIST_FILE, OUTFMT, MAX_TARGET_SEQS, E_VALUE_THRESH,
-                                                          COVERAGE_THRESHOLD, CPU, DEBUG, debug)
+                                                          COVERAGE_THRESHOLD, CPU, RUN_ALL, DEBUG, debug)
 print("BLASTP part 1 done!")
 print("*******************")
 
@@ -289,19 +296,37 @@ second_blast_for_ids_dict, blast2_output_files, blast2_gene_id_paths = part_two.
                                                                                      BLASTP_PATH, TARGET_DB, OUTFMT,
                                                                                      MAX_TARGET_SEQS,
                                                                                      BACK_E_VALUE_THRESH, CPU,
-                                                                                     ORG_TAX_ID, DEBUG, debug,
+                                                                                     ORG_TAX_ID, RUN_ALL, DEBUG, debug,
                                                                                      input_list=blast1_output_files)
 print("BLASTP part 2 done!")
 print("*******************")
 
 # part 3:
 if part_three.main(SECOND_BLAST_FOLDER, BACK_E_VALUE_THRESH, IDENTITY_THRESHOLD, COVERAGE_THRESHOLD, TEXTUAL_MATCH,
-                   TEXTUAL_SEQ_MATCH, ORIGIN_SPECIES, ACCESSION_REGEX, DESCRIPTION_REGEX, run_folder,
+                   TEXTUAL_SEQ_MATCH, ORIGIN_SPECIES, ACCESSION_REGEX,DESCRIPTION_REGEX, run_folder,
                    MAX_ATTEMPTS_TO_COMPLETE_REC_BLAST, CSV_RBH_OUTPUT_FILENAME, CSV_STRICT_OUTPUT_FILENAME,
                    CSV_NS_OUTPUT_FILENAME, FASTA_OUTPUT_FOLDER, DEBUG, debug, good_tax_list, id_dic,
                    second_blast_for_ids_dict, blast2_gene_id_paths):
     print("part 3 done!")
     print("*******************")
+
+# Visual output:
+try:
+    debug("Creating images:")
+    image_paths = generate_visual_graphs(CSV_RBH_OUTPUT_FILENAME, CSV_STRICT_OUTPUT_FILENAME, CSV_NS_OUTPUT_FILENAME)
+    debug("Image paths saved!")
+    print("Printed all viz files to folder {}".format(run_folder))
+except Exception, e:
+    print "Exception occurred while running the visualization part: {}".format(e)
+
+# Zip results:
+try:
+    debug("Zipping results:")
+    files_to_zip = [CSV_RBH_OUTPUT_FILENAME, CSV_STRICT_OUTPUT_FILENAME, CSV_NS_OUTPUT_FILENAME] + image_paths.values()
+    zip_output_path = zip_results(FASTA_OUTPUT_FOLDER, files_to_zip, run_folder)
+    print("saved zip output to: {}".format(zip_output_path))
+except Exception, e:
+    print "Exception occurred while running zip on output files: {}".format(e)
 
 # cleaning:
 if not DEBUG and not args.keep_files:
@@ -309,5 +334,4 @@ if not DEBUG and not args.keep_files:
         print("Files archived, compressed and cleaned.")
 
 print("Program done.")
-
 

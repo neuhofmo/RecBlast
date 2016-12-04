@@ -32,12 +32,11 @@ def gene_list_to_csv(gene_list, taxid, out_file, try_uniprot=False):
     with open(out_file, "w") as output:
         # generating the csv we need for the analysis
         output_write = output.write  # for efficiency
-        output_write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
+        # output_write("{}\n".format(",".join(["gene_id", "gene_name", "uniprot_id"])))  # write title
+        # moved the above line to the bottom
         mg = mygene.MyGeneInfo()  # mygene module
         genes_data = mg.querymany(gene_list, scopes='symbol,name,reporter,accession,ensemblprotein,retired',
-                                  fields='uniprot,name,symbol',
-                                  species=taxid)
-
+                                  fields='uniprot,name,symbol', species=taxid)
         gene_count = 0
         for geneDic in genes_data:  # iterating over dicts
             try:  # parsing
@@ -90,11 +89,14 @@ def gene_file_to_csv(infile, tax_id, outfile=None, try_uniprot=False):
     # if the outfile is not provided we will generate our own
     if not outfile:
         outfile = "{}.genes.csv".format(infile)
+    # doing the sorting ourselves
     outfile_unsorted = "{}.unsorted_genes.csv".format(infile)
     input_accession_list = gene_list_from_file(infile)
     if gene_list_to_csv(input_accession_list, tax_id, outfile_unsorted, try_uniprot):
+        # get write folder for the script:
+        write_folder = os.path.dirname(infile)
         # sort uniq using a script:
-        script_path = write_sort_command_script(outfile_unsorted, outfile)
+        script_path = write_sort_command_script(outfile_unsorted, outfile, write_folder)
         subprocess.check_call(script_path)
         print("Sorted and merged file to {}".format(outfile))
         return outfile
@@ -116,5 +118,4 @@ if __name__ == "__main__":
         output_file = None
     output_file = gene_file_to_csv(input_file, tax_id, output_file)
     print "Wrote CSV to {}".format(output_file)
-
 

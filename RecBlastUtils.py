@@ -4,12 +4,12 @@
 
 import os
 import tarfile
+import zipfile
 from time import strftime, sleep
 import re
 import subprocess
 from Bio import Entrez
 import shutil
-import zipfile
 
 
 TEMP_FILES_PATH = os.getcwd()
@@ -21,11 +21,12 @@ def prepare_files(items, file_name, user_id, files_path=TEMP_FILES_PATH):
     # items = list(set(items))  # make the list unique  # unnecessary
     with open(full_path, 'w') as f:
         for item in items:
-            f.write(item + "\n")
+            f.write("{}\n".format(item))  # improved efficiency
     return full_path
 
 
 def file_to_string(file_name):
+    """Reads a file (file_name) and returns the text in it as a string."""
     with open(file_name, 'r') as f:
         text = f.read()
     # delete original file
@@ -43,8 +44,9 @@ def remove_commas(file_name):
     return file_name
 
 
-def zip_results(fasta_output_path, csv_rbh_output_filename, csv_strict_output_filename, csv_ns_output_filename,
-                output_path):
+# def zip_results(fasta_output_path, csv_rbh_output_filename, csv_strict_output_filename, csv_ns_output_filename,
+#                 output_path):
+def zip_results(fasta_output_path, zip_list, output_path):
     """
     Receives a folder containing fasta sequences and a csv file, adds them all to zip.
     :param fasta_output_path:
@@ -56,15 +58,18 @@ def zip_results(fasta_output_path, csv_rbh_output_filename, csv_strict_output_fi
     """
     zip_file = join_folder(output_path, "output.zip")
     fastas = [join_folder(fasta_output_path, x) for x in os.listdir(fasta_output_path)]
+    bname = os.path.basename  # for efficiency
     with zipfile.ZipFile(zip_file, mode='w') as zf:
         # adding all fasta files
         for fasta in fastas:
-            zf.write(fasta, os.path.basename(fasta))
+            zf.write(fasta, bname(fasta))
         # zf.write(csv_file_path, os.path.basename(csv_file_path))  # add csv file
         # add csv files
-        zf.write(csv_rbh_output_filename, os.path.basename(csv_rbh_output_filename))  # add csv file
-        zf.write(csv_strict_output_filename, os.path.basename(csv_strict_output_filename))  # add csv file
-        zf.write(csv_ns_output_filename, os.path.basename(csv_ns_output_filename))  # add csv file
+        for f_to_zip in zip_list:
+            zf.write(f_to_zip, bname(f_to_zip))
+        # zf.write(csv_rbh_output_filename, os.path.basename(csv_rbh_output_filename))  # add csv file
+        # zf.write(csv_strict_output_filename, os.path.basename(csv_strict_output_filename))  # add csv file
+        # zf.write(csv_ns_output_filename, os.path.basename(csv_ns_output_filename))  # add csv file
     return zip_file
 
 
@@ -128,9 +133,10 @@ def cleanup(path, storage_folder, run_id):
     return True
 
 
-def write_blast_run_script(command_line):
+def write_blast_run_script(command_line, write_folder):
     """Writing a blast run script, and giving it run permissions."""
-    script_path = "/tmp/blastp_run.sh"  # default script location
+    # script_path = "/tmp/blastp_run.sh"  # default script location
+    script_path = join_folder(write_folder, "blastp_run.sh")  # script location
     with open(script_path, 'w') as script:
         script.write("#! /bin/tcsh\n")
         script.write("# The script is designed to run the following blastp command from RecBlast\n")
@@ -140,13 +146,17 @@ def write_blast_run_script(command_line):
     return script_path
 
 
-def write_sort_command_script(filename_to_sort, sorted_filename):
+def write_sort_command_script(filename_to_sort, sorted_filename, write_folder):
     """Writing a sort uniq script to edit the gene csv file."""
-    script_path = "/tmp/sort_script.sh"  # default script location
+    # script_path = "/tmp/sort_script.sh"  # default script location
+    script_path = join_folder(write_folder, "sort_script.sh")  # script location
     with open(script_path, 'w') as script:
         script.write("#! /bin/tcsh\n")
         script.write("# The script is designed to run sort, uniq command from RecBlast\n")
-        command_line = "cat {0} | sort | uniq > {1}\n".format(filename_to_sort, sorted_filename)
+        command_line = "cat {0} | sort | uniq > {1}.temp; " \
+                       "echo 'gene_id,gene_name,uniprot_id' > {1}; cat {1}.temp >> {1}; " \
+                       "rm {1}.temp\n".format(filename_to_sort, sorted_filename)
+        # changed to make sure the title only comes after the genes
         script.write(command_line)
         # run permissions for the script:
     os.chmod(script_path, 0751)
@@ -161,10 +171,7 @@ def merge_two_dicts(x, y):
 
 
 def is_number(s):
-    """
-    The script determines if a string is a number or a text.
-    Returns True if it's a number.
-    """
+    """The function determines if a string is a number or a text. Returns True if it's a number. """
     try:
         int(s)
         return True

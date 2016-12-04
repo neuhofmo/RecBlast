@@ -5,7 +5,6 @@ import pickle
 from difflib import SequenceMatcher
 from itertools import islice
 from RecBlastUtils import *
-# from RecBlastParams import *
 
 
 all_genes_dict = {}
@@ -24,11 +23,7 @@ def similar(a, b):
 
 def format_description(description, regex, species):
     """
-
-    :param description:
-    :param regex:
-    :param species:
-    :return:
+    Reformat the description for consistency.
     """
     species = lower(str(species))
     description = replace(lower(str(description)), "predicted: ", "")
@@ -96,15 +91,13 @@ def write_all_output_csv(out_dict, org_list, csv_rbh_output_filename, csv_strict
     # get all organisms
     all_org_list = sorted(list(set(org_list + good_tax_list)))
     # open 3 files:
+    header_line = "{}\n".format(",".join(["gene_name"] + all_org_list))
     with open(csv_rbh_output_filename, 'w') as csv_rbh_file:
-        csv_rbh_file.write(",".join(["gene_name"] + all_org_list))  # write header
-        csv_rbh_file.write("\n")
+        csv_rbh_file.write(header_line)  # write header
         with open(csv_strict_output_filename, 'w') as csv_strict_file:
-            csv_strict_file.write(",".join(["gene_name"] + all_org_list))  # write header
-            csv_strict_file.write("\n")
+            csv_strict_file.write(header_line)  # write header
             with open(csv_ns_output_filename, 'w') as csv_nonstrict_file:
-                csv_nonstrict_file.write(",".join(["gene_name"] + all_org_list))  # write header
-                csv_nonstrict_file.write("\n")
+                csv_nonstrict_file.write(header_line)  # write header
 
                 for gene_name in out_dict:  # write every line
                     assert type(gene_name) == str, "Gene name is not a string!"
@@ -154,9 +147,7 @@ def get_definition(accession_list, DEBUG, debug, attempt_no=0):
         return results
 
     except Exception, e:
-        print "Error connecting to server, trying again..."
-        print "Error: {}".format(e)
-        debug("Error connecting to server, trying again...\n")
+        debug("Error: {}\nError connecting to server, trying again...".format(e))
 
         # sleeping in case it's a temporary database problem
         sleep_period = 180
@@ -344,7 +335,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                         debug("Calculated matches for gene_id {0} enumerator {1}".format(gene_id, enumerator))
                         # add the fasta sequence to this fasta output (declared in part 1)
                         fasta_output_file_name = join_folder(fasta_output_folder,
-                                                              "fasta-{0}-{1}".format(gene_id, target_name1))  # basename
+                                                             "fasta-{0}-{1}".format(gene_id, target_name1))  # basename
                         fasta_output_filename_rbh = fasta_output_file_name + '_RBH.fasta'
                         fasta_output_filename_ns = fasta_output_file_name + '_non-strict.fasta'
                         fasta_output_filename_strict = fasta_output_file_name + '_strict.fasta'
@@ -376,7 +367,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
 
         # documenting full reciprocal blast results for this gene
         pickle.dump(this_gene_dic, open(join_folder(run_folder, 'full_results_for_ID_%s-%s.p' %
-                                                     (gene_id, target_name1)), 'wb'))
+                                                    (gene_id, target_name1)), 'wb'))
 
         # add this_gene_dic to a final result dic
         all_genes_dict[target_name1] = this_gene_dic
@@ -388,9 +379,12 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
                             csv_ns_output_filename, DEBUG, debug, good_tax_list):
         print "Wrote csv output to files: {},{},{}".format(csv_rbh_output_filename, csv_strict_output_filename,
                                                            csv_ns_output_filename)
+
     print("Printed all the output fasta sequences to folder {}".format(fasta_output_folder))
 
     print "done!"
-    return True
+    return csv_rbh_output_filename, csv_strict_output_filename, csv_ns_output_filename
+
 
 # Done with part 3
+

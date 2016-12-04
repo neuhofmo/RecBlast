@@ -15,7 +15,7 @@ def create_tax_dict(tax_db):
     return tax_dict
 
 
-def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None):
+def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, original_species, origin_species_id, output_path=None):
     """
     Receives a dictionary of taxa and their tax_id, a file containing taxa name, and an optional update_match_results path.
     :param tax_dict:  a dict where key=tax_name, value=tax_id made by create_tax_dict
@@ -28,9 +28,9 @@ def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None)
     good_tax_list = []
     line_counter = 0
     if not output_path:  # if the update_match_results path is not provided, let's create our own
-        output_path = tax_list_file + ".taxid.txt"
+        output_path = "{}.taxid.txt".format(tax_list_file)
     with open(tax_list_file) as f:
-        with open(output_path, "wb") as output:  # writing update_match_results file
+        with open(output_path, "w") as output:  # writing update_match_results file
             for line in f:
                 line = strip(line)
                 if not line:  # empty line
@@ -40,6 +40,9 @@ def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None)
                     if line.find(" ") == -1:
                         print "Taxon {} is not a valid taxon. Too big of a clade!".format(line)
                         bad_tax_list.append(line)
+                    elif line == original_species:
+                        print "Taxon {} is the taxon of origin!".format(line)
+                        bad_tax_list.append(line)
                     else:
                         output.write("{}\n".format(tax_id))
                         good_tax_list.append(line)  # append name
@@ -48,8 +51,12 @@ def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None)
                         try:
                             tax_name = tax_id_dict[line]
                             tax_id = line
-                            output.write("{}\n".format(tax_id))
-                            good_tax_list.append(tax_name)  # append name
+                            if tax_id == origin_species_id:  # making sure it's not a duplicate entry
+                                print "Taxon {} is the taxon of origin!".format(tax_id)
+                                bad_tax_list.append(tax_id)
+                            else:
+                                output.write("{}\n".format(tax_id))
+                                good_tax_list.append(tax_name)  # append name
                         except KeyError:  # If it's not a valid tax ID
                             print "Tax ID {} does not exist in NCBI tax database!".format(line)
                             bad_tax_list.append(line)
@@ -62,4 +69,3 @@ def convert_tax_to_taxid(tax_dict, tax_id_dict, tax_list_file, output_path=None)
         exit(1)
     # returning the list of the bad taxa
     return output_path, bad_tax_list, good_tax_list
-
