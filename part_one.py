@@ -55,6 +55,7 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
     :param cpu: number of CPU to use in BLAST
     :param DEBUG: DEBUG parameter
     :param debug: debug function
+    :param run_all: run all sequences as one file (boolean, default False)
     :return:
     """
     # defined in advance for efficiency:
@@ -132,11 +133,12 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
         # debug(valueList[5])  # That was a debug print.
         local_id_dic[valueList[5]] = (fasta_filename, filtered_blast_out_filename)
         with open(fasta_filename, 'w') as output:
-            output.write("{}\n\n".format(valueList[0]))  # write fasta to update_match_results file
+            output.write("{}\n\n".format(valueList[0]))  # write fasta to output file
 
-        # Adding writing to the unified file
-        with open(all_fasta_filename, 'a') as output:
-            output.write("{}\n\n".format(valueList[0]))  # write fasta to update_match_results file
+        # Adding writing to the unified
+        if run_all:
+            with open(all_fasta_filename, 'a') as output:
+                output.write("{}\n\n".format(valueList[0]))  # write fasta to output file
 
         blast_output_file = join_folder(first_blast_folder, blast_out_filename)
         filtered_blast_out_filename = join_folder(first_blast_folder, filtered_blast_out_filename)
