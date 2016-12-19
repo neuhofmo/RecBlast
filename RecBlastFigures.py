@@ -210,9 +210,8 @@ def generate_visual_graphs(csv_rbh_output_filename, csv_strict_output_filename, 
     col_cluster = False
     if len(df_nonstrict.columns) > 2:
         col_cluster = True
-    elif len(df_nonstrict) <= 2:
-        # dont_cluster = True
-        dont_cluster = False  # I removed it for now
+    elif len(df_nonstrict.columns) < 2 or len(df_nonstrict) <= 2:
+        dont_cluster = True
 
     # visual outputs:
     viz_dict = dict()
