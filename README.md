@@ -3,7 +3,7 @@ RecBlast: Reciprocal Blast for the masses.
 [![DOI](https://zenodo.org/badge/63588926.svg)](https://zenodo.org/badge/latestdoi/63588926)
 
 
-Welcome to RecBlast stand-alone.  
+Welcome to **RecBlast** stand-alone.  
 RecBlast stand-alone is a local, downloadable version of RecBlast. RecBlast is a powerful tool to which performs large-scale orthology detection across multiple genes and multiple taxa (MGMT) by implementing fast reciprocal protein Blast.  
 RecBlast is available as an easy-to-use cloud-based web server, and can be accessed from [here](http://reciprocalblast.com).  
 
@@ -88,6 +88,31 @@ There is no real need for any other parameter to change, unless, for example, yo
 In addition, a list of optional arguments is described when using the help flag:  
 `python ./RecBlast.py --help`  
 Additional explanation of the effect of each argument can be found [here](http://reciprocalblast.com/documentation)  
+
+### License
+The MIT License (MIT)
+
+Copyright (c) 2016 Moran Neuhof and Efrat Rapoport
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+### Contact
 
 If you have any other questions, or any bugs to report, please contact us at recblast@gmail.com.  
 
