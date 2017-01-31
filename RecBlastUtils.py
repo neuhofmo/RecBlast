@@ -10,7 +10,8 @@ import re
 import subprocess
 from Bio import Entrez
 import shutil
-
+Entrez.email = "recblast@gmail.com"
+Entrez.tool = "RecBlast"
 
 TEMP_FILES_PATH = os.getcwd()
 
@@ -138,7 +139,8 @@ def write_blast_run_script(command_line, write_folder):
     # script_path = "/tmp/blastp_run.sh"  # default script location
     script_path = join_folder(write_folder, "blastp_run.sh")  # script location
     with open(script_path, 'w') as script:
-        script.write("#! /bin/tcsh\n")
+        # script.write("#! /bin/tcsh\n")
+        script.write("#! /bin/bash\n")
         script.write("# The script is designed to run the following blastp command from RecBlast\n")
         script.write(command_line)
         # run permissions for the script:
@@ -151,7 +153,8 @@ def write_sort_command_script(filename_to_sort, sorted_filename, write_folder):
     # script_path = "/tmp/sort_script.sh"  # default script location
     script_path = join_folder(write_folder, "sort_script.sh")  # script location
     with open(script_path, 'w') as script:
-        script.write("#! /bin/tcsh\n")
+        # script.write("#! /bin/tcsh\n")
+        script.write("#! /bin/bash\n")
         script.write("# The script is designed to run sort, uniq command from RecBlast\n")
         command_line = "cat {0} | sort | uniq > {1}.temp; " \
                        "echo 'gene_id,gene_name,uniprot_id' > {1}; cat {1}.temp >> {1}; " \

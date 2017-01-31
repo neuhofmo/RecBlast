@@ -11,7 +11,7 @@ import part_three
 from RecBlastFigures import *
 
 # this will be the stand alone version of RecBlast for linux.
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 
 # flags:
@@ -39,6 +39,7 @@ DESCRIPTION_REGEX = re.compile(r'\([^)]*\)')
 ORIGINAL_ID = 1  # start part_two from 0. change this when you want to start from mid-file
 APP_CONTACT_EMAIL = "recblast@gmail.com"
 Entrez.email = APP_CONTACT_EMAIL
+Entrez.tool = "RecBlast"
 
 # comparison
 TEXTUAL_MATCH = 0.4
