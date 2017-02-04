@@ -139,7 +139,7 @@ def get_definition(accession_list, DEBUG, debug, attempt_no=0):
     :return:
     """
     try:  # fetching from entrez
-        handle = Entrez.efetch(db="nucleotide", id=accession_list, retmode="xml")
+        handle = Entrez.efetch(db="protein", id=accession_list, retmode="xml")
         records = Entrez.read(handle)
         debug("Successfully connected to Entrez.")
         # get the definition and sequence of each gene
