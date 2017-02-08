@@ -94,6 +94,14 @@ parser.add_argument("--keep_files", help="Keeps intermediate files after complet
                     default=False)
 parser.add_argument("--try_uniprot", help="Looks for the sequences in UniProt too", action="store_true",
                     default=False)
+parser.add_argument("--skip_first_blast", help="Skips the first blast run (and runs files from the"
+                                               "local folder. Use this if your run was interrupted and you wish to "
+                                               "continue it from the second blast phase.", action="store_true",
+                    default=False)
+parser.add_argument("--skip_second_blast", help="Skips the first AND second blast runs (and runs files from the"
+                                                "local folder). Use this if your run was interrupted and you wish to "
+                                                "continue it from the analysis stage of the second blast.",
+                    action="store_true", default=False)
 parser.add_argument("--debug", help="Adds debug prints in various stages of the run.", action="store_true",
                     default=False)
 parser.add_argument("-v", "--version", help="Prints version in formation.", action="store_true",
@@ -271,6 +279,16 @@ else:
         gi_file = join_folder(run_folder, "taxon_gi_file_list.txt")  # the path to the new file
         TARGET_DB = subset_db(ORG_TAX_ID, gi_file, DB_FOLDER, DB, args.run_even_if_no_db_found, DEBUG, debug)
 
+# skipping the first and the second blasts:
+if args.skip_second_blast:
+    run_first_blast = False
+    run_second_blast = False
+elif args.skip_first_blast:
+    run_first_blast = False
+    run_second_blast = True
+else:
+    run_first_blast = True
+    run_second_blast = True
 
 #################
 # Run main code #
@@ -284,7 +302,8 @@ print("starting to perform part_one.py")
 id_dic, blast1_output_files, local_id_dic = part_one.main(CSV_PATH, APP_CONTACT_EMAIL, run_folder, FASTA_PATH,
                                                           FIRST_BLAST_FOLDER, FASTA_OUTPUT_FOLDER, BLASTP_PATH, DB,
                                                           TAXA_LIST_FILE, OUTFMT, MAX_TARGET_SEQS, E_VALUE_THRESH,
-                                                          COVERAGE_THRESHOLD, CPU, RUN_ALL, DEBUG, debug)
+                                                          COVERAGE_THRESHOLD, CPU, RUN_ALL, DEBUG, debug,
+                                                          run_first_blast)
 print("BLASTP part 1 done!")
 print("*******************")
 
@@ -298,6 +317,7 @@ second_blast_for_ids_dict, blast2_output_files, blast2_gene_id_paths = part_two.
                                                                                      MAX_TARGET_SEQS,
                                                                                      BACK_E_VALUE_THRESH, CPU,
                                                                                      ORG_TAX_ID, RUN_ALL, DEBUG, debug,
+                                                                                     run_second_blast,
                                                                                      input_list=blast1_output_files)
 print("BLASTP part 2 done!")
 print("*******************")

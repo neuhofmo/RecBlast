@@ -106,7 +106,7 @@ def split_blast_files(blast_out_filename, local_dic, first_blast_folder, DEBUG, 
 
 def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_value_thresh, identity_threshold,
          coverage_threshold, accession_regex, run_folder, blastp_path, target_db, outfmt, max_target_seqs,
-         back_e_value_thresh, cpu, org_tax_id, run_all, DEBUG, debug, input_list=None):
+         back_e_value_thresh, cpu, org_tax_id, run_all, DEBUG, debug, run_second_blast, input_list=None):
     """
     Main function of part 2. Starts from first blast and ends with the second blast.
     """
@@ -261,21 +261,23 @@ def main(local_id_dic, first_blast_folder, second_blast_folder, original_id, e_v
                                                                                 back_e_value_thresh, coverage_threshold,
                                                                                 cpu, blast_output_file, org_tax_id,
                                                                                 filtered_blast_output_file)
+            if run_second_blast:
+                debug("Running the following line:\n{}".format(command_line))
 
-            debug("Running the following line:\n{}".format(command_line))
+                # writing the command to file and running the file
+                try:                                                    # this try paragraph was added later to handle
+                    script_path = write_blast_run_script(command_line, run_folder)  # I/O operations,
+                    subprocess.check_call(script_path)                              # delay in read/write operations...
+                except subprocess.CalledProcessError:                   # restarting the process (with a little sleep)
+                    debug("Had a little problem with running this command: "
+                          "{}\nSo we are running it again.".format(command_line))
+                    sleep(10)
+                    script_path = write_blast_run_script(command_line, run_folder)
+                    sleep(20)
+                    subprocess.check_call(script_path)
 
-            # writing the command to file and running the file
-            try:                                                        # this try paragraph was added later to handle
-                script_path = write_blast_run_script(command_line, run_folder)  # I/O operations,
-                subprocess.check_call(script_path)                              # delay in read/write operations...
-            except subprocess.CalledProcessError:                   # restarting the process (with a little sleep)
-                debug("Had a little problem with running this command: "
-                      "{}\nSo we are running it again.".format(command_line))
-                sleep(10)
-                script_path = write_blast_run_script(command_line, run_folder)
-                sleep(20)
-                subprocess.check_call(script_path)
-
+            else:
+                debug("Not running blast.\nSkipped running the following line:\n{}".format(command_line))
             # adding the filtered update_match_results file name here:
             blast_two_output_files.append(filtered_blast_output_file)
 

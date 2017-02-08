@@ -36,9 +36,11 @@ def get_uni(uni_id, contact):
 
 
 def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_output_folder, blastp_path, db,
-         taxa_list_file, outfmt, max_target_seqs, e_value_thresh, coverage_threshold, cpu, run_all, DEBUG, debug):
+         taxa_list_file, outfmt, max_target_seqs, e_value_thresh, coverage_threshold, cpu, run_all, DEBUG, debug,
+         run_first_blast):
     """
     Main function of part_one. Performs most
+    :param run_first_blast: if True, runs the first blast process (default)
     :param file_path: The gene list file
     :param contact: email address (RecBlast)
     :param run_folder: path to run in
@@ -166,21 +168,24 @@ def main(file_path, contact, run_folder, fasta_path, first_blast_folder, fasta_o
                                                                                       coverage_threshold, cpu,
                                                                                       blast_output_file, taxa_list_file,
                                                                                       filtered_blast_out_filename)
-            debug("Running the following line:\n{}".format(command_line))
+            if run_first_blast:
+                debug("Running the following line:\n{}".format(command_line))
 
-            # writing the command to file and running the file
-            try:                                                    # this try paragraph was added later to handle
-                script_path = write_blast_run_script(command_line, run_folder)  # I/O operations,
-                subprocess.check_call(script_path)                              # delay in read/write operations
-            except subprocess.CalledProcessError:                 # restarting the process (with a little sleep period)
-                debug("Had a little problem with running this command: "
-                      "{}\nSo we are running it again.".format(command_line))
-                sleep(10)
-                script_path = write_blast_run_script(command_line, run_folder)
-                sleep(20)
-                subprocess.check_call(script_path)
+                # writing the command to file and running the file
+                try:                                                    # this try paragraph was added later to handle
+                    script_path = write_blast_run_script(command_line, run_folder)  # I/O operations,
+                    subprocess.check_call(script_path)                              # delay in read/write operations
+                except subprocess.CalledProcessError:                   # restarting the process
+                    debug("Had a little problem with running this command: "  # (with a short sleep period)
+                          "{}\nSo we are running it again.".format(command_line))
+                    sleep(10)
+                    script_path = write_blast_run_script(command_line, run_folder)
+                    sleep(20)
+                    subprocess.check_call(script_path)
 
-            print "Finished running {0}.".format(job_name)
+                print "Finished running {0}.".format(job_name)
+            else:
+                debug("Not running blast.\nSkipped running the following line:\n{}".format(command_line))
 
         # adding the filtered file name here:
         blast_one_output_files.append(filtered_blast_out_filename)  # adding even if we didn't run blast

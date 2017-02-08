@@ -260,9 +260,9 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
         debug_file = open(join_folder(run_folder, "missedhits_for_gene_%s(%s).txt") % (gene_id, target_name1), "w")
 
         # a list containing all the files we are going to work on, for this gene id:
-        all_files_in_gene_id = [file_name for file_name in os.listdir(gene_path_folder) if
+        all_files_in_gene_id = (file_name for file_name in os.listdir(gene_path_folder) if
                                 (os.path.isfile(join_folder(gene_path_folder, file_name)) and
-                                 file_name.endswith('.taxa_filtered.txt'))]
+                                 file_name.endswith('.taxa_filtered.txt')))
 
         indexes_per_id = []
         index_files_dict = {}
@@ -296,7 +296,7 @@ def main(second_blast_folder, e_value_thresh, identity_threshold, coverage_thres
             debug("accessions: {}".format(accessions))
 
             # getting taxa info only for the genes that passed the initial quality text
-            if accessions:  # if we have any results
+            if accessions and accessions != ['']:  # if we have any results
                 candidates = get_definition(accessions, DEBUG, debug)  # get strings to compare to the original_id
 
                 indexes_to_remove = set()  # set of indexes to remove each round
