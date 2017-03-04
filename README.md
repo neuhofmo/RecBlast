@@ -112,6 +112,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+### Citing information
+
+If you used any of the available RecBlast versions, please cite our preprint:   
+Rapoport and Neuhof. RecBlast: Cloud-Based Large Scale Orthology Detection. bioRxiv 112946; doi: https://doi.org/10.1101/112946   
+
 ### Contact
 
 If you have any other questions, or any bugs to report, please contact us at recblast@gmail.com.  
